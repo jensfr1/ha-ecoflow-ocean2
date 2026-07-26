@@ -1,3 +1,5 @@
+<img src="icon.png" alt="" width="96" align="right">
+
 # EcoFlow PowerOcean für Home Assistant
 
 Livedaten deiner EcoFlow-PowerOcean-Anlage in Home Assistant — PV, Batterie,
