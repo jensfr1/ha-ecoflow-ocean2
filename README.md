@@ -1,16 +1,16 @@
 <img src="icon.png" alt="" width="96" align="right">
 
-# EcoFlow PowerOcean for Home Assistant
+# EcoFlow Ocean 2 for Home Assistant
 
 **English** · [Deutsch](README.de.md)
 
-Live data from your EcoFlow PowerOcean system in Home Assistant — solar,
-battery, grid, phases and battery modules, refreshed every ~10 seconds.
+Live data from your EcoFlow Ocean 2 in Home Assistant — solar, battery, grid,
+phases and battery modules, refreshed every ~10 seconds.
 
 ## Why another integration?
 
-For the **new PowerOcean generation** (serial numbers starting with `RE11`,
-called "Ocean 2" internally at EcoFlow), **no** available solution returns data:
+For the **EcoFlow Ocean 2** (serial numbers starting with `RE11`), **no**
+available solution returns data:
 
 | Route | Problem |
 |---|---|
@@ -34,7 +34,7 @@ against the EcoFlow web portal (deviation ~1 %).
 
 1. HACS → Integrations → ⋮ → *Custom repositories*
 2. Add the URL of this repository, category *Integration*
-3. Install "EcoFlow PowerOcean (Ocean 2)", restart Home Assistant
+3. Install "EcoFlow Ocean 2", restart Home Assistant
 
 ### Manual
 
@@ -43,7 +43,7 @@ Copy the folder `custom_components/ecoflow_ocean2` into
 
 ## Setup
 
-*Settings → Devices & Services → Add Integration → EcoFlow PowerOcean (Ocean 2)*
+*Settings → Devices & Services → Add Integration → EcoFlow Ocean 2*
 
 | Field | |
 |---|---|

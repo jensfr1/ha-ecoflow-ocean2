@@ -1,16 +1,16 @@
 <img src="icon.png" alt="" width="96" align="right">
 
-# EcoFlow PowerOcean für Home Assistant
+# EcoFlow Ocean 2 für Home Assistant
 
 [English](README.md) · **Deutsch**
 
-Livedaten deiner EcoFlow-PowerOcean-Anlage in Home Assistant — PV, Batterie,
-Netz, Phasen und Batteriemodule, alle ~10 Sekunden aktualisiert.
+Livedaten deines EcoFlow Ocean 2 in Home Assistant — PV, Batterie, Netz, Phasen
+und Batteriemodule, alle ~10 Sekunden aktualisiert.
 
 ## Warum noch eine Integration?
 
-Für die **neue PowerOcean-Generation** (Seriennummern beginnend mit `RE11`,
-von EcoFlow intern „Ocean 2") liefert bislang **keine** verfügbare Lösung Daten:
+Für das **EcoFlow Ocean 2** (Seriennummern beginnend mit `RE11`) liefert bislang
+**keine** verfügbare Lösung Daten:
 
 | Weg | Problem |
 |---|---|
@@ -35,7 +35,7 @@ verifiziert (Abweichung ~1 %).
 
 1. HACS → Integrationen → ⋮ → *Benutzerdefinierte Repositories*
 2. URL dieses Repos eintragen, Kategorie *Integration*
-3. „EcoFlow PowerOcean (Ocean 2)" installieren, Home Assistant neu starten
+3. „EcoFlow Ocean 2" installieren, Home Assistant neu starten
 
 ### Manuell
 
@@ -44,7 +44,7 @@ kopieren und Home Assistant neu starten.
 
 ## Einrichtung
 
-*Einstellungen → Geräte & Dienste → Integration hinzufügen → EcoFlow PowerOcean (Ocean 2)*
+*Einstellungen → Geräte & Dienste → Integration hinzufügen → EcoFlow Ocean 2*
 
 | Feld | |
 |---|---|
