@@ -1,138 +1,149 @@
 <img src="icon.png" alt="" width="96" align="right">
 
-# EcoFlow PowerOcean für Home Assistant
+# EcoFlow PowerOcean for Home Assistant
 
-Livedaten deiner EcoFlow-PowerOcean-Anlage in Home Assistant — PV, Batterie,
-Netz, Phasen und Batteriemodule, alle ~10 Sekunden aktualisiert.
+**English** · [Deutsch](README.de.md)
 
-## Warum noch eine Integration?
+Live data from your EcoFlow PowerOcean system in Home Assistant — solar,
+battery, grid, phases and battery modules, refreshed every ~10 seconds.
 
-Für die **neue PowerOcean-Generation** (Seriennummern beginnend mit `RE11`,
-von EcoFlow intern „Ocean 2") liefert bislang **keine** verfügbare Lösung Daten:
+## Why another integration?
 
-| Weg | Problem |
+For the **new PowerOcean generation** (serial numbers starting with `RE11`,
+called "Ocean 2" internally at EcoFlow), **no** available solution returns data:
+
+| Route | Problem |
 |---|---|
-| Offizielle Developer-API | Fehler `1006` — „current device is not allowed to get device info" |
-| Offizielles MQTT-Topic | Verbindung klappt, es kommen aber nie Daten |
-| App-REST-API (`provider-service/user/device/detail`) | Antwortet mit `code 0`, aber **leerem** Datenteil |
-| Modbus TCP | Nur nach Freischaltung durch den Installateur |
+| Official Developer API | Error `1006` — "current device is not allowed to get device info" |
+| Official MQTT topic | Connects fine, but never delivers data |
+| App REST API (`provider-service/user/device/detail`) | Answers `code 0` with an **empty** payload |
+| Modbus TCP | Only after the installer unlocks it |
 
-Der einzige funktionierende Weg ist das **App-MQTT** von EcoFlow. Dort sendet
-das Gerät Protobuf-Telemetrie — die neue Generation allerdings in der
-Nachrichtenklasse **`cmdFunc 254`** (`cmdId 39` = Telemetrie, `cmdId 46` =
-Batteriemodul), die bislang nirgends dokumentiert war. Die Feldzuordnung wurde
-aus mitgeschnittenem Verkehr rekonstruiert und gegen das EcoFlow-Webportal
-verifiziert (Abweichung ~1 %).
+The one route that works is EcoFlow's **app MQTT**. The device sends protobuf
+telemetry there — but this generation uses message class **`cmdFunc 254`**
+(`cmdId 39` = telemetry, `cmdId 46` = battery module), which was not documented
+anywhere. The field mapping was reconstructed from captured traffic and verified
+against the EcoFlow web portal (deviation ~1 %).
 
-> **Hinweis:** Diese Integration nutzt eine inoffizielle API. EcoFlow kann sie
-> jederzeit ändern.
+> **Note:** This integration uses an unofficial API. EcoFlow can change it at
+> any time.
 
 ## Installation
 
-### HACS (empfohlen)
+### HACS (recommended)
 
-1. HACS → Integrationen → ⋮ → *Benutzerdefinierte Repositories*
-2. URL dieses Repos eintragen, Kategorie *Integration*
-3. „EcoFlow PowerOcean" installieren, Home Assistant neu starten
+1. HACS → Integrations → ⋮ → *Custom repositories*
+2. Add the URL of this repository, category *Integration*
+3. Install "EcoFlow PowerOcean (Ocean 2)", restart Home Assistant
 
-### Manuell
+### Manual
 
-Ordner `custom_components/ecoflow_ocean2` nach `config/custom_components/`
-kopieren und Home Assistant neu starten.
+Copy the folder `custom_components/ecoflow_ocean2` into
+`config/custom_components/` and restart Home Assistant.
 
-## Einrichtung
+## Setup
 
-*Einstellungen → Geräte & Dienste → Integration hinzufügen → EcoFlow PowerOcean*
+*Settings → Devices & Services → Add Integration → EcoFlow PowerOcean (Ocean 2)*
 
-| Feld | |
+| Field | |
 |---|---|
-| E-Mail | dein EcoFlow-Konto (wie in der App) |
-| Passwort | wird beim Einrichten sofort geprüft |
-| Seriennummer | die des Wechselrichters, z. B. `RE11XXXXXXXXXXXX` |
+| Email | your EcoFlow account (the same as in the app) |
+| Password | verified immediately during setup |
+| Serial number | the one of the inverter, e.g. `RE11XXXXXXXXXXXX` |
 
-Die Zugangsdaten werden bereits im Dialog getestet — ein Tippfehler fällt also
-sofort auf. Lehnt EcoFlow das Passwort später ab, fragt Home Assistant es
-automatisch neu ab (Reauth).
+Credentials are tested right in the dialog, so a typo shows up immediately. If
+EcoFlow rejects the password later on, Home Assistant asks for it again
+(reauth).
 
-## Entitäten
+## Entities
 
-**Leistung:** Solarleistung, Batterieleistung (+ laden / − entladen),
-Netzleistung (+ Bezug / − Einspeisung), Hausverbrauch, Wechselrichter-Ausgang,
-Gesamtleistung aller Phasen, Leistung je PV-String.
+**Power:** solar power, battery power (+ charging / − discharging), grid power
+(+ import / − export), house consumption, inverter output, total power across
+all phases, power per PV string.
 
-**Batterie:** Ladestand, verbleibende Energie, „lädt"-Status; je Modul
-Ladestand, Temperatur und Spannung (als eigenes Untergerät).
+**Battery:** state of charge, remaining energy, "charging" status; per module
+state of charge, temperature and voltage (as its own sub-device).
 
-**Phasen:** Spannung, Strom und Wirkleistung je Phase — standardmäßig
-deaktiviert, um die Geräteseite übersichtlich zu halten. Bei Bedarf in den
-Entitätseinstellungen aktivieren.
+**Phases:** voltage, current and active power per phase — disabled by default to
+keep the device page readable. Enable them in the entity settings if you need
+them.
 
-**Energie (für das Energie-Dashboard):** Netzbezug, Netzeinspeisung,
-Solarerzeugung, Batterie geladen/entladen, Hausverbrauch — als kWh-Zähler.
+**Energy (for the energy dashboard):** grid consumption, grid return, solar
+production, battery charged/discharged, house consumption — as kWh counters.
 
-### Energie-Dashboard einrichten
+### Setting up the energy dashboard
 
-Das Gerät liefert nur Momentanleistung, deshalb bildet die Integration die
-kWh-Zähler selbst (Integration über die Zeit). Sie überstehen Neustarts und
-rechnen Verbindungslücken **nicht** hoch — es wird also keine Energie erfunden,
-die während eines Ausfalls „vielleicht" geflossen ist.
+The device only reports instantaneous power, so the integration builds the kWh
+counters itself (integration over time). They survive restarts and do **not**
+extrapolate across connection gaps — no energy is invented that "might" have
+flowed during an outage.
 
-Unter *Einstellungen → Dashboards → Energie* eintragen:
+Configure under *Settings → Dashboards → Energy*:
 
-| Feld im Dashboard | Entität |
+| Field in the dashboard | Entity |
 |---|---|
-| Netzbezug | `sensor.*_netzbezug` |
-| Rückspeisung ins Netz | `sensor.*_netzeinspeisung` |
-| Solarproduktion | `sensor.*_solarerzeugung` |
-| Batterie: Energie hinein | `sensor.*_batterie_geladen` |
-| Batterie: Energie heraus | `sensor.*_batterie_entladen` |
+| Grid consumption | *Grid consumption* |
+| Return to grid | *Grid return* |
+| Solar production | *Solar production* |
+| Battery: energy going in | *Battery charged* |
+| Battery: energy going out | *Battery discharged* |
 
-## Zwei berechnete Werte
+Do **not** add *house consumption* there — the dashboard derives it from the
+five values above, so adding it would count twice.
 
-Nicht alles kommt direkt vom Gerät:
+Whether the names appear in English or in your language depends on *Settings →
+System → General → Language*: entity names are translated server-side using the
+**system language**, not the language of your user profile. Entity IDs are
+generated once during setup and do not change later, even if you switch the
+language.
 
-- **Hausverbrauch** wird als `PV − Batterie + Netz` berechnet. Genauso rechnet
-  auch das EcoFlow-Webportal.
-- **Gesamtleistung aller Phasen** ist die Summe der Einzelphasen. Sie bleibt
-  leer, solange eine Phase ihren Wert noch nicht gemeldet hat — eine Teilsumme
-  wäre zu niedrig und damit irreführend.
+## Two calculated values
 
-## Stabilität
+Not everything comes straight from the device:
 
-- **Push statt Polling:** Die MQTT-Verbindung bleibt offen, Werte kommen von
-  selbst. Ein Weckruf alle 60 Sekunden hält den Datenstrom am Leben — ohne ihn
-  verstummt das Gerät, sobald keine EcoFlow-App offen ist.
-- **Reconnect mit erneuter Anmeldung:** Bleiben Daten aus, holt die Integration
-  Token und MQTT-Zertifikat neu, statt endlos mit abgelaufenen Zugangsdaten zu
-  verbinden.
-- **Ehrliche Verfügbarkeit:** Reißt der Datenstrom ab, werden die Messwerte als
-  *nicht verfügbar* markiert, statt alte Werte als aktuell auszugeben. Die
-  Energiezähler bleiben davon unberührt.
-- **Gedrosselte Updates:** Das Gerät sendet alle ~2 Sekunden; geschrieben wird
-  höchstens alle 10 Sekunden. Das entlastet Datenbank und SD-Karte spürbar.
+- **House consumption** is calculated as `solar − battery + grid`. The EcoFlow
+  web portal does the same.
+- **Total power across all phases** is the sum of the individual phases. It
+  stays empty as long as one phase has not reported its value yet — a partial
+  sum would be too low and therefore misleading.
 
-## Entwicklung
+## Stability
+
+- **Push instead of polling:** the MQTT connection stays open and values arrive
+  on their own. A wake-up call every 60 seconds keeps the stream alive — without
+  it the device goes silent as soon as no EcoFlow app is open.
+- **Reconnect with re-login:** if data stops arriving, the integration fetches a
+  fresh token and MQTT certificate instead of reconnecting forever with expired
+  credentials.
+- **Honest availability:** when the stream breaks, measurements are marked
+  *unavailable* rather than presenting stale values as current. The energy
+  counters are unaffected by this.
+- **Throttled updates:** the device sends about every 2 seconds; states are
+  written at most every 10 seconds. That noticeably relieves the database and
+  the SD card.
+
+## Development
 
 ```bash
 pip install pytest
 python -m pytest tests/ -q
 ```
 
-Die Fachlogik (Decoder, Merge, Energie-Integration) ist bewusst frei von
-Home-Assistant-Importen und damit ohne HA testbar. Die Tests laufen gegen
-**echte, aufgezeichnete Payloads** der Anlage.
+The domain logic (decoder, merge, energy integration) is deliberately free of
+Home Assistant imports and therefore testable without HA. The tests run against
+**real, recorded payloads** from the system.
 
-Zusätzlich prüft `tests/crosscheck_ts.py`, ob der Python-Decoder exakt dieselben
-Werte liefert wie die TypeScript-Referenzimplementierung.
+In addition, `tests/crosscheck_ts.py` verifies that the Python decoder returns
+exactly the same values as the TypeScript reference implementation.
 
-## Dank
+## Acknowledgements
 
-Die Reverse-Engineering-Vorarbeit anderer Projekte hat geholfen, das
-Rahmenformat zu verstehen — insbesondere
+Reverse-engineering work done by other projects helped to understand the frame
+format — in particular
 [foxthefox/ioBroker.ecoflow-mqtt](https://github.com/foxthefox/ioBroker.ecoflow-mqtt)
-und [Feberdin/ecoflow-powerocean-ha](https://github.com/Feberdin/ecoflow-powerocean-ha)
-(beide MIT). Die Dekodierung von `cmdFunc 254` ist eigene Arbeit.
+and [Feberdin/ecoflow-powerocean-ha](https://github.com/Feberdin/ecoflow-powerocean-ha)
+(both MIT). Decoding `cmdFunc 254` is original work.
 
-## Lizenz
+## License
 
 MIT
