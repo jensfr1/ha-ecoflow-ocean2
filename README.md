@@ -144,6 +144,16 @@ format — in particular
 and [Feberdin/ecoflow-powerocean-ha](https://github.com/Feberdin/ecoflow-powerocean-ha)
 (both MIT). Decoding `cmdFunc 254` is original work.
 
+## Support
+
+I build this in my spare time and give it away. If it saves you something and you
+can spare it, a small contribution is welcome — nothing is expected, and no
+feature is gated behind it.
+
+<a href="https://buymeacoffee.com/jensfr"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=flat&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
+
+A GitHub star costs nothing and helps just as much.
+
 ## License
 
 MIT
