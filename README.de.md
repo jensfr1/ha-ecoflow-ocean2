@@ -144,6 +144,16 @@ Rahmenformat zu verstehen — insbesondere
 und [Feberdin/ecoflow-powerocean-ha](https://github.com/Feberdin/ecoflow-powerocean-ha)
 (beide MIT). Die Dekodierung von `cmdFunc 254` ist eigene Arbeit.
 
+## Unterstützung
+
+Ich baue das in meiner Freizeit und gebe es her. Wenn es dir etwas spart und du
+es erübrigen kannst, freue ich mich über einen kleinen Beitrag — erwartet wird
+nichts, und nichts ist davon abhängig.
+
+[**PayPal**](https://www.paypal.com/donate/?business=jensfr%40gmail.com&currency_code=EUR)
+
+Ein Stern auf GitHub kostet nichts und hilft genauso.
+
 ## Lizenz
 
 MIT
