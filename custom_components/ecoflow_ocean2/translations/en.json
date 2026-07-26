@@ -1,0 +1,70 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to EcoFlow",
+        "description": "Enter the credentials of your EcoFlow account (the same you use in the app) and the serial number of your inverter.\n\nThis integration uses EcoFlow's app API, because the official Developer API does not return live data for PowerOcean systems.",
+        "data": {
+          "email": "Email address",
+          "password": "Password",
+          "device_sn": "Serial number"
+        },
+        "data_description": {
+          "device_sn": "Serial number of the inverter, for example RE11XXXXXXXXXXXX"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate EcoFlow",
+        "description": "The password for {email} is no longer accepted. Please enter it again.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the EcoFlow cloud. Check your internet connection.",
+      "invalid_auth": "Email or password rejected by EcoFlow.",
+      "unknown": "Unexpected error. See the log for details."
+    },
+    "abort": {
+      "already_configured": "This system is already set up.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "pv_power": { "name": "Solar power" },
+      "battery_power": { "name": "Battery power" },
+      "battery_soc": { "name": "Battery" },
+      "battery_remaining_energy": { "name": "Battery remaining energy" },
+      "grid_power": { "name": "Grid power" },
+      "house_power": { "name": "House consumption" },
+      "inverter_power": { "name": "Inverter output" },
+      "phase_a_voltage": { "name": "Phase A voltage" },
+      "phase_a_current": { "name": "Phase A current" },
+      "phase_a_active_power": { "name": "Phase A power" },
+      "phase_b_voltage": { "name": "Phase B voltage" },
+      "phase_b_current": { "name": "Phase B current" },
+      "phase_b_active_power": { "name": "Phase B power" },
+      "phase_c_voltage": { "name": "Phase C voltage" },
+      "phase_c_current": { "name": "Phase C current" },
+      "phase_c_active_power": { "name": "Phase C power" },
+      "phases_total_active_power": { "name": "Total power all phases" },
+      "phases_average_voltage": { "name": "Average voltage" },
+      "pv_string_power": { "name": "String {index} power" },
+      "module_soc": { "name": "Module {index} battery" },
+      "module_temperature": { "name": "Module {index} temperature" },
+      "module_voltage": { "name": "Module {index} voltage" },
+      "grid_imported_energy": { "name": "Grid consumption" },
+      "grid_exported_energy": { "name": "Grid return" },
+      "pv_produced_energy": { "name": "Solar production" },
+      "battery_charged_energy": { "name": "Battery charged" },
+      "battery_discharged_energy": { "name": "Battery discharged" },
+      "house_consumed_energy": { "name": "House consumption energy" }
+    },
+    "binary_sensor": {
+      "battery_charging": { "name": "Battery charging" },
+      "grid_exporting": { "name": "Exporting to grid" }
+    }
+  }
+}
