@@ -42,6 +42,12 @@ verifiziert (Abweichung ~1 %).
 Ordner `custom_components/ecoflow_ocean2` nach `config/custom_components/`
 kopieren und Home Assistant neu starten.
 
+Vorausgesetzt wird Home Assistant 2024.10 oder neuer. Ab 2026.3 bringt die
+Integration ihr Logo selbst mit (`brand/icon.png`); auf älteren Versionen
+erscheint das allgemeine Symbol, bis der Eintrag in
+[home-assistant/brands](https://github.com/home-assistant/brands/pull/10852)
+gemergt ist.
+
 ## Einrichtung
 
 *Einstellungen → Geräte & Dienste → Integration hinzufügen → EcoFlow Ocean 2*
