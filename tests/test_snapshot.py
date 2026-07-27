@@ -134,6 +134,28 @@ class TestPhasenSummen:
 
 
 class TestHauslast:
+    def test_wechselrichter_plus_netz_hat_vorrang(self) -> None:
+        """Liegen beide Messwerte vor, wird direkt gerechnet.
+
+        Werte vom 27.07.2026: Der Wechselrichter versorgte das Haus mit
+        150,5 W, aus dem Netz kamen 4,2 W - macht 155 W.
+        """
+        snapshot = empty_snapshot(SN)
+        snapshot.inverter_power_w = 150.5
+        snapshot.grid_power_w = 4.2
+        # Absichtlich widersprechende Werte fuer die alte Bilanz: Sie darf
+        # nicht mehr greifen, solange die beiden echten Messwerte da sind.
+        snapshot.pv_power_w = 9999.0
+        snapshot.battery_power_w = 0.0
+        assert round(compute_house_load(snapshot)) == 155
+
+    def test_beim_laden_aus_dem_netz(self) -> None:
+        # Wechselrichter zieht 1530 W zum Laden, 1719 W kommen aus dem Netz
+        snapshot = empty_snapshot(SN)
+        snapshot.inverter_power_w = -1530.0
+        snapshot.grid_power_w = 1719.0
+        assert round(compute_house_load(snapshot)) == 189
+
     def test_pv_minus_batterie_plus_netz(self) -> None:
         snapshot = empty_snapshot(SN)
         snapshot.pv_power_w = 1500.0
@@ -176,6 +198,8 @@ class TestEchtePayload:
         assert round(snapshot.pv_power_w) == 1127
         assert snapshot.battery_soc == 100
         assert snapshot.battery_remaining_wh == 10048
-        # Nulleinspeisung: PV deckt die Last, nichts ins Netz
-        assert snapshot.grid_power_w == 0
+        # Diese Aufzeichnung enthaelt keinen Wechselrichter-Block, also auch
+        # kein Feld 4.13 - ohne das gibt es keinen Netzwert.
+        assert snapshot.grid_power_w is None
+        # Rueckfallebene greift: PV - Batterie + Netz, mit Batterie und Netz 0
         assert round(snapshot.house_power_w) == 1127

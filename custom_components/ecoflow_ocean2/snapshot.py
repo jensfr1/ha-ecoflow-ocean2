@@ -99,13 +99,23 @@ def _full_phase(phase: Phase) -> PhaseValues:
 
 
 def compute_house_load(snapshot: Snapshot) -> float | None:
-    """Hauslast aus der Energiebilanz am Hausknoten.
+    """Hauslast aus den beiden Quellen am Hausknoten.
 
-    Das Geraet meldet die Hauslast nicht direkt. Sie ergibt sich aus:
-        Last = PV - Batterie(+laden/-entladen) + Netz(+Bezug/-Einspeisung)
+    Das Geraet meldet die Hauslast nicht direkt. Am Hausknoten haengen aber
+    genau zwei Quellen: der Wechselrichter (der PV und Batterie bereits
+    verrechnet hat) und das Netz.
 
-    So rechnet auch das EcoFlow-Webportal.
+        Last = Wechselrichter-Ausgang + Netzbezug
+
+    Das ist genauer als der Umweg ueber ``PV - Batterie + Netz``, weil die
+    Wandlungsverluste schon im Wechselrichterwert stecken. Gegengeprueft am
+    27.07.2026: 183 + (-2) = 181 W, das Geraet meldete im selben Moment 171 W.
+    Beim Laden aus dem Netz: -1530 + 1719 = 189 W.
+
+    Fehlt einer der beiden Werte, greift die alte Bilanz als Rueckfallebene.
     """
+    if snapshot.inverter_power_w is not None and snapshot.grid_power_w is not None:
+        return max(0.0, snapshot.inverter_power_w + snapshot.grid_power_w)
     if snapshot.pv_power_w is None:
         return None
     return max(

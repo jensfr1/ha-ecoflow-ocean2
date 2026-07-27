@@ -53,13 +53,21 @@ class TestSummary:
         assert summary.po2_telemetry is not None
         assert summary.has_payload()
 
-    def test_liest_pv_netz_batterie_soc(self, summary) -> None:
+    def test_liest_pv_batterie_soc(self, summary) -> None:
         t = summary.po2_telemetry
         assert round(t.pv_power_w) == 1127
-        # Anlage mit Nulleinspeisung: Netz und Batterie ruhen
-        assert t.grid_power_w == 0
         assert t.battery_power_w == 0
         assert t.soc_percent == 100
+
+    def test_ohne_wechselrichterblock_keine_netzleistung(self, summary) -> None:
+        """Diese Aufzeichnung enthaelt nur Block 65, also kein Feld 4.13.
+
+        Frueher wurde hier 65.7 als Netzleistung gelesen; das ergab 0 und sah
+        plausibel aus, ist aber eine Einstellung und keine Messung. Ohne
+        Block 4 gibt es schlicht keinen Netzwert - None ist die ehrliche
+        Antwort darauf.
+        """
+        assert summary.po2_telemetry.grid_power_w is None
 
     def test_liest_verbleibende_energie(self, summary) -> None:
         # 10048 Wh entspricht dem 10-kWh-Speicher
@@ -115,3 +123,23 @@ class TestRobustheit:
     def test_unbekannte_nachricht_ist_leer(self) -> None:
         # Gueltiger Envelope, aber cmdFunc/cmdId, die wir nicht kennen
         assert not decode_mqtt_payload(b"\x0a\x04\x0a\x02\x01\x02").has_payload()
+
+
+class TestNetzleistung:
+    """Feld 4.13 - die tatsaechliche Netzleistung.
+
+    Aufgezeichnet am 27.07.2026 an der Referenzanlage. Der Frame enthaelt
+    Block 4 mit Wechselrichter- und Netzwert; daran laesst sich die Hauslast
+    gegenrechnen.
+    """
+
+    HEX = (
+        "0a93010a3a22380dec7e16431a210a111dc4524c42255284d5422df8b2ec4230010a0c1d8de86342251624d14230036d8051874072090a070802150281d2421060182020012801380340fe014827503a58017090eff90178fe01800104c2011052453131585858585858585858585858ca011052453131585858585858585858585858d2011052453131585858585858585858585858"
+    )
+
+    def test_liest_netz_und_wechselrichter(self) -> None:
+        message = decode_mqtt_payload(bytes.fromhex(self.HEX))
+        t = message.po2_telemetry
+        assert t is not None
+        assert round(t.grid_power_w, 1) == 4.2
+        assert round(t.pcs_total_w, 1) == 150.5

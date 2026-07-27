@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/jensfr1/ha-ecoflow-ocean2/issues",
   "loggers": ["paho"],
   "requirements": ["paho-mqtt>=2.1.0"],
-  "version": "0.1.4"
+  "version": "0.1.5"
 }

@@ -343,17 +343,15 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
 
     # Feld 65 = Systemzusammenfassung.
     #   4  = PV-Leistung
-    #   7  = Netz (~0 bei Nulleinspeisung, positiv = Bezug)
     #   15 = verbleibende Akku-Energie in Wh
     #   17 = System-SoC
     #   20 = Batterieleistung als Betrag
     # ACHTUNG: 65.6 ist NICHT der Netzzaehler, sondern der Wechselrichter-
-    # Ausgang. Diese Verwechslung fuehrte anfangs zu voellig falschen Werten.
+    # Ausgang. Und 65.7 ist es ebenso wenig - siehe Feld 4.13 weiter unten.
     summary_raw = f.get(65, [None])[0]
     if isinstance(summary_raw, bytes):
         s = _decode_fields(summary_raw)
         result.pv_power_w = _num(s, 4)
-        result.grid_power_w = _num(s, 7)
         result.soc_percent = _num(s, 17)
         result.remaining_wh = _num(s, 15)
         # Betrag exakt 0 heisst: Akku ruht. Feld 7.4 fehlt dann in den anderen
@@ -379,12 +377,27 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
     # Feld 4 = Wechselrichter-Block.
     #   1    = AC-Gesamtleistung
     #   3.1  = Phasen (delta-kodiert, Index in Unterfeld 6)
+    #   13   = Netzleistung
     #   14.1 = PV-Strings (Index in Unterfeld 1, Leistung in 4)
     pcs_raw = f.get(4, [None])[0]
     if isinstance(pcs_raw, bytes):
         p = _decode_fields(pcs_raw)
         if 1 in p:
             result.pcs_total_w = _num(p, 1)
+
+        # 4.13 = Netzleistung, positiv = Bezug, negativ = Einspeisung.
+        #
+        # Nachgewiesen am 27.07.2026: Beim Laden der Batterie aus dem Netz
+        # stand hier 1719 W, waehrend der Wechselrichter (4.1) mit -1530 W zog
+        # und das Haus rund 190 W brauchte - die Summe geht auf. Mit dem Ende
+        # der Ladung fiel der Wert binnen Sekunden auf 0.
+        #
+        # Frueher wurde Feld 65.7 verwendet. Das ist eine Einstellung, keine
+        # Messung: An einer Anlage mit Nulleinspeisung steht es dauerhaft auf 0
+        # (weshalb der Fehler lange unbemerkt blieb), an einer Anlage mit
+        # 10-kW-Begrenzung meldete es konstant 10000.
+        if 13 in p:
+            result.grid_power_w = _num(p, 13)
 
         phase_block = p.get(3, [None])[0]
         if isinstance(phase_block, bytes):
