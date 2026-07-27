@@ -226,6 +226,12 @@ class EcoflowMqttClient:
 
     def _handle_message(self, client: mqtt.Client, userdata: Any, message: mqtt.MQTTMessage) -> None:
         payload = message.payload
+        # Rohframe als Hex protokollieren, wenn Debug aktiv ist. Die
+        # Feldzuordnung wurde an einer einzigen Anlage erarbeitet; weicht eine
+        # andere ab, ist das hier die einzige Moeglichkeit, das nachzuvollziehen,
+        # ohne physischen Zugriff auf das Geraet.
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            _LOGGER.debug("MQTT-Rohframe (%d Bytes): %s", len(payload), payload.hex())
         self._loop.call_soon_threadsafe(self._on_payload, payload)
 
     def _handle_disconnect(
