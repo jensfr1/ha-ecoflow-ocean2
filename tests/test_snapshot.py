@@ -16,6 +16,7 @@ from custom_components.ecoflow_ocean2.protobuf import (
 )
 from custom_components.ecoflow_ocean2.snapshot import (
     average_phases,
+    apply_grid_deadband,
     compute_house_load,
     empty_snapshot,
     merge_snapshot,
@@ -203,3 +204,19 @@ class TestEchtePayload:
         assert snapshot.grid_power_w is None
         # Rueckfallebene greift: PV - Batterie + Netz, mit Batterie und Netz 0
         assert round(snapshot.house_power_w) == 1127
+
+
+class TestNetzTotzone:
+    """EcoFlow blendet kleine Netzwerte aus - wir tun es genauso.
+
+    Im Verlaufsexport des Portals gibt es keinen einzigen Wert zwischen -30
+    und +30 ausser exakt 0. Ohne dieselbe Schwelle steht in Home Assistant
+    "7 W Bezug", waehrend die App daneben 0 W zeigt.
+    """
+
+    @pytest.mark.parametrize(
+        ("gemessen", "erwartet"),
+        [(-5.4, 0.0), (6.0, 0.0), (29.9, 0.0), (30.0, 30.0), (-30.0, -30.0), (1719.0, 1719.0)],
+    )
+    def test_schwelle(self, gemessen: float, erwartet: float) -> None:
+        assert apply_grid_deadband(gemessen) == erwartet

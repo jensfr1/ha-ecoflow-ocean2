@@ -98,6 +98,21 @@ def _full_phase(phase: Phase) -> PhaseValues:
     )
 
 
+#: Totzone um null, wie sie EcoFlow selbst anwendet.
+#:
+#: Der Zaehler misst auch im Leerlauf ein paar Watt in die eine oder andere
+#: Richtung. Im Portal und in der App taucht das nie auf: Deren Verlaufsexport
+#: enthaelt ausschliesslich 0 oder Betraege ab 30 W. Ohne diese Schwelle zeigt
+#: Home Assistant "7 W Bezug", waehrend die App daneben 0 W meldet - und jemand
+#: sucht den Fehler bei sich.
+GRID_DEADBAND_W = 30.0
+
+
+def apply_grid_deadband(watt: float) -> float:
+    """Kleine Messwerte um null auf 0 ziehen."""
+    return 0.0 if abs(watt) < GRID_DEADBAND_W else watt
+
+
 def compute_house_load(snapshot: Snapshot) -> float | None:
     """Hauslast aus den beiden Quellen am Hausknoten.
 
@@ -207,7 +222,7 @@ def merge_snapshot(
         if telemetry.pv_power_w is not None:
             snapshot.pv_power_w = telemetry.pv_power_w
         if telemetry.grid_power_w is not None:
-            snapshot.grid_power_w = telemetry.grid_power_w
+            snapshot.grid_power_w = apply_grid_deadband(telemetry.grid_power_w)
         if telemetry.battery_power_w is not None:
             snapshot.battery_power_w = telemetry.battery_power_w
         # SoC 0 kommt in Teilnachrichten als Platzhalter vor
