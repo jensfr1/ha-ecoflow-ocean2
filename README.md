@@ -42,10 +42,8 @@ Copy the folder `custom_components/ecoflow_ocean2` into
 `config/custom_components/` and restart Home Assistant.
 
 Home Assistant 2024.10 or newer is required. From 2026.3 on, the integration
-also brings its own logo along (`brand/icon.png`); on older versions the generic
-icon is shown until the entry in
-[home-assistant/brands](https://github.com/home-assistant/brands/pull/10852) is
-merged.
+brings its own logo along (`brand/icon.png`); older versions show the generic
+icon instead.
 
 ## Setup
 
