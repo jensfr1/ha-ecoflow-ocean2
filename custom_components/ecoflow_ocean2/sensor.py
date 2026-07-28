@@ -227,19 +227,43 @@ async def async_setup_entry(
         EcoflowEnergySensor(coordinator, description) for description in ENERGY_SENSORS
     ]
 
-    snapshot = coordinator.data
-    if snapshot:
-        entities += [
-            EcoflowPvStringSensor(coordinator, index) for index in sorted(snapshot.pv_strings)
-        ]
-        for index in sorted(snapshot.battery_modules):
-            entities += [
-                EcoflowModuleSensor(coordinator, index, "soc"),
-                EcoflowModuleSensor(coordinator, index, "temperature"),
-                EcoflowModuleSensor(coordinator, index, "voltage"),
+    async_add_entities(entities)
+
+    # ── Nachwachsende Entities ───────────────────────────────────────────────
+    #
+    # Batteriemodule und PV-Straenge stehen beim Einrichten noch nicht fest:
+    # Der Zustand ist dann leer, weil die erste MQTT-Nachricht erst Sekunden
+    # spaeter eintrifft. Wer sie nur hier anlegt, bekommt beim ersten Start
+    # ueberhaupt keine Modulsensoren - bis die Integration neu geladen wird.
+    #
+    # Deshalb hoeren wir dem Coordinator zu und legen nach, sobald ein neuer
+    # Index auftaucht. Das deckt auch den Fall ab, dass jemand spaeter ein
+    # Modul ergaenzt oder ein Strang erst bei Sonnenschein meldet.
+    bekannte_module: set[int] = set()
+    bekannte_straenge: set[int] = set()
+
+    @callback
+    def _pruefe_neue_geraete() -> None:
+        if not (snapshot := coordinator.data):
+            return
+        neue: list[SensorEntity] = []
+
+        for index in sorted(set(snapshot.battery_modules) - bekannte_module):
+            bekannte_module.add(index)
+            neue += [
+                EcoflowModuleSensor(coordinator, index, measure)
+                for measure in EcoflowModuleSensor.MEASURE_KEYS
             ]
 
-    async_add_entities(entities)
+        for index in sorted(set(snapshot.pv_strings) - bekannte_straenge):
+            bekannte_straenge.add(index)
+            neue.append(EcoflowPvStringSensor(coordinator, index))
+
+        if neue:
+            async_add_entities(neue)
+
+    entry.async_on_unload(coordinator.async_add_listener(_pruefe_neue_geraete))
+    _pruefe_neue_geraete()
 
 
 class EcoflowSensor(EcoflowEntity, SensorEntity):
@@ -326,22 +350,29 @@ class EcoflowPvStringSensor(EcoflowEntity, SensorEntity):
 class EcoflowModuleSensor(EcoflowModuleEntity, SensorEntity):
     """Messwert eines Batteriemoduls."""
 
+    #: Reihenfolge, in der die Sensoren je Modul angelegt werden.
+    MEASURE_KEYS = ("soc", "temperature", "voltage", "power", "soh", "cycles")
+
+    #: Messgroesse -> (Geraeteklasse, Einheit, Nachkommastellen, Feld im Snapshot)
     _MEASURES = {
-        "soc": (
-            SensorDeviceClass.BATTERY,
-            PERCENTAGE,
-            1,
-        ),
+        "soc": (SensorDeviceClass.BATTERY, PERCENTAGE, 1, "soc"),
         "temperature": (
             SensorDeviceClass.TEMPERATURE,
             UnitOfTemperature.CELSIUS,
             1,
+            "temperature",
         ),
         "voltage": (
             SensorDeviceClass.VOLTAGE,
             UnitOfElectricPotential.VOLT,
             1,
+            "voltage",
         ),
+        "power": (SensorDeviceClass.POWER, UnitOfPower.WATT, 0, "power_w"),
+        # Alterungszustand: bewusst ohne Geraeteklasse. BATTERY waere der
+        # Ladestand und wuerde in der Oberflaeche als solcher dargestellt.
+        "soh": (None, PERCENTAGE, 1, "soh_percent"),
+        "cycles": (None, None, 0, "cycles"),
     }
 
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -349,7 +380,7 @@ class EcoflowModuleSensor(EcoflowModuleEntity, SensorEntity):
     def __init__(self, coordinator: EcoflowCoordinator, index: int, measure: str) -> None:
         super().__init__(coordinator, f"module_{index}_{measure}", index)
         self._measure = measure
-        device_class, unit, precision = self._MEASURES[measure]
+        device_class, unit, precision, self._attribute = self._MEASURES[measure]
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = unit
         self._attr_suggested_display_precision = precision
@@ -362,4 +393,4 @@ class EcoflowModuleSensor(EcoflowModuleEntity, SensorEntity):
             return None
         if not (module := snapshot.battery_modules.get(self._index)):
             return None
-        return getattr(module, self._measure)
+        return getattr(module, self._attribute)

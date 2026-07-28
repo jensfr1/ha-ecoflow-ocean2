@@ -33,38 +33,110 @@
   },
   "entity": {
     "sensor": {
-      "pv_power": { "name": "Solarleistung" },
-      "battery_power": { "name": "Batterieleistung" },
-      "battery_soc": { "name": "Batterie" },
-      "battery_remaining_energy": { "name": "Verbleibende Akku-Energie" },
-      "grid_power": { "name": "Netzleistung" },
-      "house_power": { "name": "Hausverbrauch" },
-      "inverter_power": { "name": "Wechselrichter-Ausgang" },
-      "phase_a_voltage": { "name": "Spannung Phase A" },
-      "phase_a_current": { "name": "Strom Phase A" },
-      "phase_a_active_power": { "name": "Leistung Phase A" },
-      "phase_b_voltage": { "name": "Spannung Phase B" },
-      "phase_b_current": { "name": "Strom Phase B" },
-      "phase_b_active_power": { "name": "Leistung Phase B" },
-      "phase_c_voltage": { "name": "Spannung Phase C" },
-      "phase_c_current": { "name": "Strom Phase C" },
-      "phase_c_active_power": { "name": "Leistung Phase C" },
-      "phases_total_active_power": { "name": "Gesamtleistung alle Phasen" },
-      "phases_average_voltage": { "name": "Mittlere Spannung" },
-      "pv_string_power": { "name": "Leistung String {index}" },
-      "module_soc": { "name": "Ladestand Modul {index}" },
-      "module_temperature": { "name": "Temperatur Modul {index}" },
-      "module_voltage": { "name": "Spannung Modul {index}" },
-      "grid_imported_energy": { "name": "Netzbezug" },
-      "grid_exported_energy": { "name": "Netzeinspeisung" },
-      "pv_produced_energy": { "name": "Solarerzeugung" },
-      "battery_charged_energy": { "name": "Batterie geladen" },
-      "battery_discharged_energy": { "name": "Batterie entladen" },
-      "house_consumed_energy": { "name": "Hausverbrauch Energie" }
+      "pv_power": {
+        "name": "Solarleistung"
+      },
+      "battery_power": {
+        "name": "Batterieleistung"
+      },
+      "battery_soc": {
+        "name": "Batterie"
+      },
+      "battery_remaining_energy": {
+        "name": "Verbleibende Akku-Energie"
+      },
+      "grid_power": {
+        "name": "Netzleistung"
+      },
+      "house_power": {
+        "name": "Hausverbrauch"
+      },
+      "inverter_power": {
+        "name": "Wechselrichter-Ausgang"
+      },
+      "phase_a_voltage": {
+        "name": "Spannung Phase A"
+      },
+      "phase_a_current": {
+        "name": "Strom Phase A"
+      },
+      "phase_a_active_power": {
+        "name": "Leistung Phase A"
+      },
+      "phase_b_voltage": {
+        "name": "Spannung Phase B"
+      },
+      "phase_b_current": {
+        "name": "Strom Phase B"
+      },
+      "phase_b_active_power": {
+        "name": "Leistung Phase B"
+      },
+      "phase_c_voltage": {
+        "name": "Spannung Phase C"
+      },
+      "phase_c_current": {
+        "name": "Strom Phase C"
+      },
+      "phase_c_active_power": {
+        "name": "Leistung Phase C"
+      },
+      "phases_total_active_power": {
+        "name": "Gesamtleistung alle Phasen"
+      },
+      "phases_average_voltage": {
+        "name": "Mittlere Spannung"
+      },
+      "pv_string_power": {
+        "name": "Leistung String {index}"
+      },
+      "module_soc": {
+        "name": "Ladestand Modul {index}"
+      },
+      "module_temperature": {
+        "name": "Temperatur Modul {index}"
+      },
+      "module_voltage": {
+        "name": "Spannung Modul {index}"
+      },
+      "grid_imported_energy": {
+        "name": "Netzbezug"
+      },
+      "grid_exported_energy": {
+        "name": "Netzeinspeisung"
+      },
+      "pv_produced_energy": {
+        "name": "Solarerzeugung"
+      },
+      "battery_charged_energy": {
+        "name": "Batterie geladen"
+      },
+      "battery_discharged_energy": {
+        "name": "Batterie entladen"
+      },
+      "house_consumed_energy": {
+        "name": "Hausverbrauch Energie"
+      },
+      "module_power": {
+        "name": "Modul {index} Leistung"
+      },
+      "module_soh": {
+        "name": "Modul {index} Alterungszustand"
+      },
+      "module_cycles": {
+        "name": "Modul {index} Ladezyklen"
+      }
     },
     "binary_sensor": {
-      "battery_charging": { "name": "Batterie lädt" },
-      "grid_exporting": { "name": "Einspeisung aktiv" }
+      "battery_charging": {
+        "name": "Batterie lädt"
+      },
+      "grid_exporting": {
+        "name": "Einspeisung aktiv"
+      },
+      "connection": {
+        "name": "Cloud-Verbindung"
+      }
     }
   }
 }

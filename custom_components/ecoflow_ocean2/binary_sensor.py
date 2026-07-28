@@ -10,6 +10,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -64,9 +65,11 @@ async def async_setup_entry(
 ) -> None:
     """Legt die Binaersensoren an."""
     coordinator = entry.runtime_data
-    async_add_entities(
+    entities: list[BinarySensorEntity] = [
         EcoflowBinarySensor(coordinator, description) for description in BINARY_SENSORS
-    )
+    ]
+    entities.append(EcoflowConnectionSensor(coordinator))
+    async_add_entities(entities)
 
 
 class EcoflowBinarySensor(EcoflowEntity, BinarySensorEntity):
@@ -85,3 +88,29 @@ class EcoflowBinarySensor(EcoflowEntity, BinarySensorEntity):
         if not (snapshot := self.coordinator.data):
             return None
         return self.entity_description.value_fn(snapshot)
+
+
+class EcoflowConnectionSensor(EcoflowEntity, BinarySensorEntity):
+    """Zustand der MQTT-Verbindung zur EcoFlow-Cloud.
+
+    Bewusst eine eigene Klasse: Die Basisklasse meldet Entities als *nicht
+    verfuegbar*, sobald der Datenstrom abreisst - fuer alle Messwerte richtig,
+    fuer diesen Sensor unbrauchbar. Er soll genau dann noch etwas sagen
+    koennen, naemlich "getrennt". Sonst laesst sich keine Automation darauf
+    bauen, die bei Verbindungsverlust anschlaegt.
+    """
+
+    _attr_translation_key = "connection"
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: EcoflowCoordinator) -> None:
+        super().__init__(coordinator, "connection")
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.connected

@@ -42,6 +42,12 @@ class BatteryModule:
     temperature: float
     voltage: float
     capacity_wh: float
+    #: Modul-Leistung in W: positiv = laden, negativ = entladen
+    power_w: float | None = None
+    #: Alterungszustand in %
+    soh_percent: float | None = None
+    #: Bisherige Vollzyklen
+    cycles: int | None = None
 
 
 @dataclass
@@ -215,6 +221,9 @@ def merge_snapshot(
             temperature=pack.temp_env,
             voltage=pack.vol,
             capacity_wh=pack.remain_wh,
+            power_w=pack.pwr,
+            soh_percent=pack.soh,
+            cycles=int(pack.cycles),
         )
 
     # ── Neue Generation (cmdFunc 254) ────────────────────────────────────────
@@ -247,6 +256,9 @@ def merge_snapshot(
             temperature=po2_pack.temp_c,
             voltage=po2_pack.voltage_v,
             capacity_wh=po2_pack.full_capacity_wh,
+            power_w=po2_pack.power_w,
+            soh_percent=po2_pack.soh_percent,
+            cycles=po2_pack.cycles,
         )
 
     # Hauslast nur berechnen, wenn sie nicht schon gemessen vorliegt

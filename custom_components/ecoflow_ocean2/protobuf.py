@@ -228,6 +228,12 @@ class Po2BatteryPack:
     full_capacity_wh: float
     temp_c: float
     voltage_v: float
+    #: Modul-Leistung in W: positiv = laden, negativ = entladen
+    power_w: float = 0.0
+    #: Alterungszustand in %
+    soh_percent: float = 0.0
+    #: Bisherige Vollzyklen
+    cycles: int = 0
 
 
 @dataclass
@@ -451,6 +457,12 @@ def _decode_po2_battery_pack(pdata: bytes) -> Po2BatteryPack | None:
         full_capacity_wh=_num(p, 54),
         temp_c=_num(p, 21),
         voltage_v=_num(p, 6) / 10,
+        # 1/3/17 tragen dieselbe Bedeutung wie bei der aelteren Generation -
+        # geprueft am 28.07.2026: 1122,59 W / 100 % / 4 Zyklen an einem vier
+        # Wochen alten System.
+        power_w=_num(p, 1),
+        soh_percent=_num(p, 3),
+        cycles=int(_num(p, 17)),
     )
 
 
