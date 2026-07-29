@@ -101,15 +101,164 @@ System → General → Language*: entity names are translated server-side using 
 generated once during setup and do not change later, even if you switch the
 language.
 
-## Two calculated values
+## Example automations
 
-Not everything comes straight from the device:
+These are deliberately **not** built into the integration. They are personal
+decisions — thresholds, wording, which messenger — and once baked into code
+they are hard to adjust. As YAML they belong to you.
 
-- **House consumption** is calculated as `solar − battery + grid`. The EcoFlow
-  web portal does the same.
+Every example below uses the entity IDs `sensor.powerocean_*`. Yours will differ
+depending on what you named the device; look them up under *Settings → Devices
+& Services → Entities*.
+
+### Daily counters as a basis
+
+Several examples need "today's" figures. Home Assistant does not derive those
+from the kWh counters on its own — a `utility_meter` with a daily cycle does.
+Add to `configuration.yaml`:
+
+```yaml
+utility_meter:
+  ocean2_solar_daily:
+    source: sensor.powerocean_solar_production
+    cycle: daily
+  ocean2_grid_import_daily:
+    source: sensor.powerocean_grid_consumption
+    cycle: daily
+  ocean2_grid_export_daily:
+    source: sensor.powerocean_grid_return
+    cycle: daily
+  ocean2_house_daily:
+    source: sensor.powerocean_house_consumption_energy
+    cycle: daily
+```
+
+### How long will the battery last?
+
+Remaining energy divided by current consumption. The `availability` line is the
+important part: without it the sensor would divide by zero at night and report
+absurd runtimes.
+
+```yaml
+template:
+  - sensor:
+      - name: "Ocean 2 remaining runtime"
+        unique_id: ocean2_remaining_runtime
+        unit_of_measurement: h
+        device_class: duration
+        state_class: measurement
+        availability: >
+          {{ has_value('sensor.powerocean_battery_remaining_energy')
+             and has_value('sensor.powerocean_house_consumption')
+             and states('sensor.powerocean_house_consumption') | float(0) > 50 }}
+        state: >
+          {{ (states('sensor.powerocean_battery_remaining_energy') | float
+              / states('sensor.powerocean_house_consumption') | float) | round(1) }}
+```
+
+### Self-sufficiency today
+
+```yaml
+template:
+  - sensor:
+      - name: "Ocean 2 self-sufficiency today"
+        unique_id: ocean2_self_sufficiency_today
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: >
+          {{ has_value('sensor.ocean2_house_daily')
+             and states('sensor.ocean2_house_daily') | float(0) > 0.1 }}
+        state: >
+          {% set house = states('sensor.ocean2_house_daily') | float %}
+          {% set grid = states('sensor.ocean2_grid_import_daily') | float(0) %}
+          {{ (100 * (house - grid) / house) | round(1) }}
+```
+
+### Sunset report
+
+```yaml
+automation:
+  - alias: "Ocean 2 daily report at sunset"
+    trigger:
+      - trigger: sun
+        event: sunset
+    action:
+      - action: notify.persistent_notification
+        data:
+          title: "Solar balance today"
+          message: >
+            Produced: {{ states('sensor.ocean2_solar_daily') | float(0) | round(1) }} kWh
+            · House: {{ states('sensor.ocean2_house_daily') | float(0) | round(1) }} kWh
+            · From grid: {{ states('sensor.ocean2_grid_import_daily') | float(0) | round(1) }} kWh
+            · To grid: {{ states('sensor.ocean2_grid_export_daily') | float(0) | round(1) }} kWh
+            · Battery now: {{ states('sensor.powerocean_battery') }} %
+```
+
+Swap `notify.persistent_notification` for your own service to get the report on
+your phone — `notify.mobile_app_<your_device>`, for example.
+
+### Warning at a low state of charge
+
+```yaml
+automation:
+  - alias: "Ocean 2 battery low"
+    trigger:
+      - trigger: numeric_state
+        entity_id: sensor.powerocean_battery
+        below: 15
+        for: "00:10:00"
+    action:
+      - action: notify.persistent_notification
+        data:
+          title: "Battery low"
+          message: >
+            Only {{ states('sensor.powerocean_battery') }} % left,
+            house drawing {{ states('sensor.powerocean_house_consumption') }} W.
+```
+
+The `for:` is what makes this usable: without it a brief dip below the
+threshold triggers a message, and you get one every few minutes.
+
+### Connection loss
+
+```yaml
+automation:
+  - alias: "Ocean 2 connection lost"
+    trigger:
+      - trigger: state
+        entity_id: binary_sensor.powerocean_cloud_connection
+        to: "off"
+        for: "00:15:00"
+    action:
+      - action: notify.persistent_notification
+        data:
+          title: "Ocean 2 unreachable"
+          message: "No data for 15 minutes."
+```
+
+**On detecting a power outage:** this cannot be done reliably with the data
+available. It would be tempting to infer it from "grid at 0 W" — but that is
+the normal state on a sunny day. What the device does *not* report is whether
+the grid itself is present. During a real outage its cloud connection drops
+too, so the automation above will fire — but so will it if only your internet
+is down. Treat the message as "no contact", not as "power failure".
+
+## Where the values come from
+
+- **House consumption** is read from the device, which reports it balanced
+  against solar, battery and grid in the same instant. Only when that field is
+  missing does the integration fall back to a calculation — and that fallback
+  comes out systematically low, because the fields it relies on are updated
+  independently and therefore stem from different moments.
 - **Total power across all phases** is the sum of the individual phases. It
   stays empty as long as one phase has not reported its value yet — a partial
   sum would be too low and therefore misleading.
+
+> **What house consumption really means:** the device reports what your house
+> draws *on top of* everything that feeds in behind its meter. If you run a
+> second, unmetered source — a balcony solar unit, for example — its output
+> never shows up, and the house consumption displayed is lower than what your
+> house actually uses.
 
 ## Stability
 

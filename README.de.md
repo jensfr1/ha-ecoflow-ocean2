@@ -102,15 +102,165 @@ Ob die Namen deutsch oder englisch erscheinen, hängt an *Einstellungen → Syst
 Entity-IDs entstehen einmalig beim Einrichten und ändern sich später nicht mehr,
 auch wenn du die Sprache umstellst.
 
-## Zwei berechnete Werte
+## Beispiel-Automatisierungen
 
-Nicht alles kommt direkt vom Gerät:
+Diese Dinge stecken bewusst **nicht** in der Integration. Es sind persönliche
+Entscheidungen — Schwellwerte, Formulierungen, welcher Messenger — und einmal
+in Code gegossen lassen sie sich schlecht anpassen. Als YAML gehören sie dir.
 
-- **Hausverbrauch** wird als `PV − Batterie + Netz` berechnet. Genauso rechnet
-  auch das EcoFlow-Webportal.
+Alle Beispiele nutzen die Entitäts-IDs `sensor.powerocean_*`. Deine können
+abweichen, je nachdem wie du das Gerät benannt hast; nachschlagen unter
+*Einstellungen → Geräte & Dienste → Entitäten*.
+
+### Tageszähler als Grundlage
+
+Mehrere Beispiele brauchen Werte „von heute". Die leitet Home Assistant nicht
+von allein aus den kWh-Zählern ab — dafür gibt es `utility_meter` mit
+Tageszyklus. In die `configuration.yaml`:
+
+```yaml
+utility_meter:
+  ocean2_solar_taeglich:
+    source: sensor.powerocean_solarerzeugung
+    cycle: daily
+  ocean2_netzbezug_taeglich:
+    source: sensor.powerocean_netzbezug
+    cycle: daily
+  ocean2_einspeisung_taeglich:
+    source: sensor.powerocean_netzeinspeisung
+    cycle: daily
+  ocean2_haus_taeglich:
+    source: sensor.powerocean_hausverbrauch_energie
+    cycle: daily
+```
+
+### Wie lange reicht die Batterie noch?
+
+Restenergie geteilt durch aktuellen Verbrauch. Die `availability`-Zeile ist der
+wichtige Teil: Ohne sie teilt der Sensor nachts durch null und meldet
+Laufzeiten von mehreren Tagen.
+
+```yaml
+template:
+  - sensor:
+      - name: "Ocean 2 Restlaufzeit"
+        unique_id: ocean2_restlaufzeit
+        unit_of_measurement: h
+        device_class: duration
+        state_class: measurement
+        availability: >
+          {{ has_value('sensor.powerocean_verbleibende_akku_energie')
+             and has_value('sensor.powerocean_hausverbrauch')
+             and states('sensor.powerocean_hausverbrauch') | float(0) > 50 }}
+        state: >
+          {{ (states('sensor.powerocean_verbleibende_akku_energie') | float
+              / states('sensor.powerocean_hausverbrauch') | float) | round(1) }}
+```
+
+### Autarkie heute
+
+```yaml
+template:
+  - sensor:
+      - name: "Ocean 2 Autarkie heute"
+        unique_id: ocean2_autarkie_heute
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: >
+          {{ has_value('sensor.ocean2_haus_taeglich')
+             and states('sensor.ocean2_haus_taeglich') | float(0) > 0.1 }}
+        state: >
+          {% set haus = states('sensor.ocean2_haus_taeglich') | float %}
+          {% set netz = states('sensor.ocean2_netzbezug_taeglich') | float(0) %}
+          {{ (100 * (haus - netz) / haus) | round(1) }}
+```
+
+### Bericht bei Sonnenuntergang
+
+```yaml
+automation:
+  - alias: "Ocean 2 Tagesbericht bei Sonnenuntergang"
+    trigger:
+      - trigger: sun
+        event: sunset
+    action:
+      - action: notify.persistent_notification
+        data:
+          title: "Solarbilanz heute"
+          message: >
+            Erzeugt: {{ states('sensor.ocean2_solar_taeglich') | float(0) | round(1) }} kWh
+            · Haus: {{ states('sensor.ocean2_haus_taeglich') | float(0) | round(1) }} kWh
+            · Aus dem Netz: {{ states('sensor.ocean2_netzbezug_taeglich') | float(0) | round(1) }} kWh
+            · Eingespeist: {{ states('sensor.ocean2_einspeisung_taeglich') | float(0) | round(1) }} kWh
+            · Batterie jetzt: {{ states('sensor.powerocean_batterie') }} %
+```
+
+Statt `notify.persistent_notification` den eigenen Dienst eintragen, um den
+Bericht aufs Handy zu bekommen — etwa `notify.mobile_app_<dein_geraet>`.
+
+### Warnung bei niedrigem Ladestand
+
+```yaml
+automation:
+  - alias: "Ocean 2 Batterie niedrig"
+    trigger:
+      - trigger: numeric_state
+        entity_id: sensor.powerocean_batterie
+        below: 15
+        for: "00:10:00"
+    action:
+      - action: notify.persistent_notification
+        data:
+          title: "Batterie niedrig"
+          message: >
+            Nur noch {{ states('sensor.powerocean_batterie') }} %,
+            das Haus zieht {{ states('sensor.powerocean_hausverbrauch') }} W.
+```
+
+Das `for:` macht die Automatisierung erst brauchbar: Ohne die zehn Minuten löst
+schon ein kurzes Unterschreiten aus, und die Meldung kommt im Minutentakt
+wieder.
+
+### Verbindungsverlust
+
+```yaml
+automation:
+  - alias: "Ocean 2 Verbindung verloren"
+    trigger:
+      - trigger: state
+        entity_id: binary_sensor.powerocean_cloud_verbindung
+        to: "off"
+        for: "00:15:00"
+    action:
+      - action: notify.persistent_notification
+        data:
+          title: "Ocean 2 nicht erreichbar"
+          message: "Seit 15 Minuten keine Daten."
+```
+
+**Zur Stromausfall-Erkennung:** Mit den verfügbaren Daten geht das nicht
+verlässlich. Naheliegend wäre, auf „Netz 0 W" zu schließen — das ist an einem
+sonnigen Tag aber der Normalzustand. Ob das Netz überhaupt anliegt, meldet das
+Gerät nicht. Bei einem echten Stromausfall bricht auch seine Cloud-Verbindung
+ab, die Automatisierung oben löst also aus — nur eben genauso, wenn bloß dein
+Internet weg ist. Die Meldung heißt „kein Kontakt", nicht „Stromausfall".
+
+## Woher die Werte kommen
+
+- **Hausverbrauch** kommt vom Gerät, das ihn im selben Moment mit Solar,
+  Batterie und Netz bilanziert meldet. Nur wenn dieses Feld fehlt, greift eine
+  Rechnung — und die fällt systematisch zu niedrig aus, weil die Felder, auf
+  die sie sich stützt, unabhängig voneinander aktualisiert werden und damit aus
+  verschiedenen Momenten stammen.
 - **Gesamtleistung aller Phasen** ist die Summe der Einzelphasen. Sie bleibt
   leer, solange eine Phase ihren Wert noch nicht gemeldet hat — eine Teilsumme
   wäre zu niedrig und damit irreführend.
+
+> **Was der Hausverbrauch wirklich bedeutet:** Das Gerät meldet, was dein Haus
+> *zusätzlich* zu allem braucht, was hinter seinem Messpunkt einspeist. Läuft
+> bei dir eine zweite, nicht mitgemessene Quelle — etwa ein Balkonkraftwerk —,
+> taucht deren Ertrag nie auf, und der angezeigte Hausverbrauch liegt unter dem
+> tatsächlichen.
 
 ## Stabilität
 
