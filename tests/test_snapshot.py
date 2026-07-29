@@ -202,8 +202,11 @@ class TestEchtePayload:
         # Diese Aufzeichnung enthaelt keinen Wechselrichter-Block, also auch
         # kein Feld 4.13 - ohne das gibt es keinen Netzwert.
         assert snapshot.grid_power_w is None
-        # Rueckfallebene greift: PV - Batterie + Netz, mit Batterie und Netz 0
-        assert round(snapshot.house_power_w) == 1127
+        # Die Hauslast kommt gemessen aus Block 87 und wird nicht mehr
+        # gerechnet. Sie liegt hier ueber der PV-Leistung, weil zusaetzlich ein
+        # kleiner Netzbezug lief - dessen Feld fehlt in dieser Aufzeichnung.
+        assert round(snapshot.house_power_w) == 1150
+        assert snapshot.house_power_measured is True
 
 
 class TestNetzTotzone:

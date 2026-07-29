@@ -67,8 +67,10 @@ class Snapshot:
     battery_remaining_wh: float | None = None
     grid_power_w: float | None = None
     inverter_power_w: float | None = None
-    #: Berechnet, kein Messwert - siehe compute_house_load()
+    #: Vom Geraet gemeldet, sonst berechnet - siehe compute_house_load()
     house_power_w: float | None = None
+    #: True, sobald die Hauslast einmal gemessen kam (dann nie mehr rechnen)
+    house_power_measured: bool = False
     phases: dict[str, PhaseValues] = field(default_factory=dict)
     #: String-Index -> Leistung in W
     pv_strings: dict[int, float] = field(default_factory=dict)
@@ -192,6 +194,12 @@ def merge_snapshot(
         battery_modules=dict(base.battery_modules),
     )
 
+    # Sobald das Geraet die Hauslast einmal selbst gemeldet hat, wird sie nie
+    # wieder gerechnet. Sonst wuerde jede Nachricht ohne dieses Feld den guten
+    # Wert durch den zu niedrigen ersetzen, und die Anzeige springt im
+    # Sekundentakt hin und her.
+    hauslast_gemessen = base.house_power_measured
+
     # ── Aeltere Generation (cmdFunc 96) ──────────────────────────────────────
     if stream := message.energy_stream:
         snapshot.battery_soc = stream.bp_soc
@@ -199,6 +207,7 @@ def merge_snapshot(
         snapshot.pv_power_w = stream.mppt_pwr
         snapshot.grid_power_w = stream.sys_grid_pwr
         snapshot.house_power_w = stream.sys_load_pwr  # hier echter Messwert
+        hauslast_gemessen = True
 
     if heartbeat := message.ems_heartbeat:
         snapshot.phases = {
@@ -241,6 +250,10 @@ def merge_snapshot(
             snapshot.battery_remaining_wh = telemetry.remaining_wh
         if telemetry.pcs_total_w is not None:
             snapshot.inverter_power_w = telemetry.pcs_total_w
+        # Gemessen schlaegt gerechnet - siehe compute_house_load()
+        if telemetry.house_power_w is not None:
+            snapshot.house_power_w = max(0.0, telemetry.house_power_w)
+            hauslast_gemessen = True
 
         for index, partial in telemetry.phases.items():
             key = PHASE_KEYS[index - 1]
@@ -262,7 +275,8 @@ def merge_snapshot(
         )
 
     # Hauslast nur berechnen, wenn sie nicht schon gemessen vorliegt
-    if not message.energy_stream:
+    snapshot.house_power_measured = hauslast_gemessen
+    if not hauslast_gemessen:
         snapshot.house_power_w = compute_house_load(snapshot)
 
     return snapshot

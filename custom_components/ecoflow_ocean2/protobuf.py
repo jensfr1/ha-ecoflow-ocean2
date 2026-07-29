@@ -207,6 +207,8 @@ class Po2Telemetry:
 
     pv_power_w: float | None = None
     grid_power_w: float | None = None
+    #: Hauslast, wie das Geraet sie selbst meldet (Feld 7.1/87.1).
+    house_power_w: float | None = None
     battery_power_w: float | None = None
     soc_percent: float | None = None
     remaining_wh: float | None = None
@@ -365,17 +367,40 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
         if _num(s, 20) == 0:
             result.battery_power_w = 0.0
 
-    # Feld 7 (bzw. 87) = Erzeugungs-Zusammenfassung.
+    # Feld 7 (bzw. 87) = Energiefluss-Zusammenfassung, so wie die App sie zeigt.
+    #   1 = Hauslast
+    #   2 = Netzleistung
     #   3 = PV-Leistung
     #   4 = Batterieleistung signiert (negativ = entladen, positiv = laden)
-    gen_raw = f.get(7, [None])[0]
-    if gen_raw is None:
-        gen_raw = f.get(87, [None])[0]
-    if isinstance(gen_raw, bytes):
+    #
+    # Dieser Block ist in sich bilanziert: PV minus Batterie minus Netz ergibt
+    # exakt die Hauslast, und alle vier Werte stammen aus demselben Moment. Das
+    # unterscheidet ihn von Block 4, dessen Felder einzeln und zu verschiedenen
+    # Zeitpunkten aktualisiert werden.
+    #
+    # Beide Bloecke koennen gleichzeitig auftreten und weichen dann leicht
+    # voneinander ab - Block 7 hinkt offenbar einen Messzyklus hinterher, und
+    # ihm fehlt haeufiger ein Feld. Deshalb feldweise zusammenfuehren, wobei 87
+    # gewinnt: Im Log vom 28.07.2026 meldete Block 7 eine Hauslast von 550 W
+    # und Block 87 gleichzeitig 560 W - die App zeigte 560 W.
+    #
+    # Block 65 bleibt die erste Wahl fuer die PV-Leistung; nur wenn er nichts
+    # geliefert hat, springt Block 7/87 ein.
+    pv_aus_summary = result.pv_power_w is not None and result.pv_power_w != 0
+    for block_nr in (7, 87):
+        gen_raw = f.get(block_nr, [None])[0]
+        if not isinstance(gen_raw, bytes):
+            continue
         g = _decode_fields(gen_raw)
         # Nur setzen, wenn das Feld wirklich da ist - sonst wuerde ein fehlendes
         # Feld einen bereits gelesenen guten Wert mit 0 ueberschreiben.
-        if (result.pv_power_w is None or result.pv_power_w == 0) and 3 in g:
+        if 1 in g:
+            result.house_power_w = _num(g, 1)
+        # Vorlaeufig; Feld 4.13 weiter unten hat Vorrang, weil es feiner
+        # aufgeloest ist und in nahezu jeder Nachricht steckt.
+        if 2 in g:
+            result.grid_power_w = _num(g, 2)
+        if not pv_aus_summary and 3 in g:
             result.pv_power_w = _num(g, 3)
         if 4 in g:
             result.battery_power_w = _num(g, 4)

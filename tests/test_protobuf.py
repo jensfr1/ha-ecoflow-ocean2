@@ -143,3 +143,46 @@ class TestNetzleistung:
         assert t is not None
         assert round(t.grid_power_w, 1) == 4.2
         assert round(t.pcs_total_w, 1) == 150.5
+
+
+class TestHauslast:
+    """Feld 7.1/87.1 - die Hauslast, wie das Geraet sie selbst meldet.
+
+    Aufgezeichnet am 28.07.2026 an einer dreiphasigen Anlage mit zwei Modulen
+    (Seriennummern anonymisiert). Der Frame belegt, warum die Hauslast gemessen
+    und nicht gerechnet gehoert: Block 87 meldet 490 W und bilanziert sauber
+    (PV 2570 - Batterie 310 - Einspeisung 1770 = 490), waehrend Wechselrichter
+    plus Netz aus Block 4 nur 306 W ergeben - diese beiden Felder stammen aus
+    verschiedenen Momenten.
+
+    Der Frame traegt Block 7 und Block 87 gleichzeitig mit leicht abweichenden
+    Werten. Block 87 gewinnt; die App zeigte dessen Zahlen.
+    """
+
+    HEX = (
+        "0af6010a9b01225a0d73060e451a390a111dad563744258eebe2422d1485394430010a111d077f374425a695c7422d352f394430020a111dd60b374425b929cf422d6ede384430032d426557446d3bccf5c4720e0a0c0802157b62c84325e079bc443a14150000e1c41d00e021452500009b433500e0214582040a0d224599431504bcb745ba05190d0000f543150040ddc41d00a020452500009b433500a020451060182020012801380340fe014827509b01580170d3d5be0578fe01800104c2011052453131585858585858585858585858ca011052453131585858585858585858585858d2011052453131585858585858585858585858"
+    )
+
+    def test_nimmt_gemeldete_hauslast_nicht_die_rechnung(self) -> None:
+        t = decode_mqtt_payload(bytes.fromhex(self.HEX)).po2_telemetry
+        assert t is not None
+        assert t.house_power_w == 490
+        # Was die alte Rechnung ergeben haette - deutlich daneben
+        assert round(t.pcs_total_w + t.grid_power_w) == 306
+
+    def test_bilanziert_mit_pv_batterie_und_netz(self) -> None:
+        t = decode_mqtt_payload(bytes.fromhex(self.HEX)).po2_telemetry
+        assert t is not None
+        assert t.pv_power_w == 2570
+        assert t.battery_power_w == 310
+        assert t.pv_power_w - t.battery_power_w - 1770 == t.house_power_w
+
+    def test_feld_4_13_hat_vorrang_vor_7_2(self) -> None:
+        t = decode_mqtt_payload(bytes.fromhex(self.HEX)).po2_telemetry
+        assert t is not None
+        assert round(t.grid_power_w, 1) == -1966.4
+
+    def test_ohne_block_7_bleibt_hauslast_leer(self) -> None:
+        t = decode_mqtt_payload(bytes.fromhex(TestNetzleistung.HEX)).po2_telemetry
+        assert t is not None
+        assert t.house_power_w is None
