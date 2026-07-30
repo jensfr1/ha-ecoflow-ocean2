@@ -1,0 +1,23 @@
+name: Tests
+
+# Der Decoder ist von Hand aus mitgeschnittenem Verkehr rekonstruiert - genau
+# dort faellt eine Regression sonst erst auf, wenn jemand falsche Werte im
+# Dashboard sieht. Die Tests laufen ohne Home Assistant und ohne Hardware.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pytest
+      - run: python -m pytest tests/ -q

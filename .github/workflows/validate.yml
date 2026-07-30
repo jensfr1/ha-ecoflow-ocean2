@@ -1,0 +1,31 @@
+name: Validate
+
+# Pflicht fuer die Aufnahme in den HACS-Standardkatalog: Beide Pruefungen
+# muessen ohne Fehler und ohne Ausnahmen durchlaufen, bevor der Antrag
+# gestellt werden kann. Der taegliche Lauf faengt ausserdem ab, wenn eine
+# kuenftige Home-Assistant-Version neue Anforderungen stellt.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  hassfest:
+    name: Hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
