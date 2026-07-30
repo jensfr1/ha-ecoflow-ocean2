@@ -4,8 +4,17 @@
 
 [English](README.md) · **Deutsch**
 
+[![Release](https://img.shields.io/github/v/release/jensfr1/ha-ecoflow-ocean2?style=for-the-badge&color=41BDF5)](https://github.com/jensfr1/ha-ecoflow-ocean2/releases)
+[![Validate](https://img.shields.io/github/actions/workflow/status/jensfr1/ha-ecoflow-ocean2/validate.yml?style=for-the-badge&label=Validate)](https://github.com/jensfr1/ha-ecoflow-ocean2/actions/workflows/validate.yml)
+[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://hacs.xyz)
+[![Issues](https://img.shields.io/github/issues/jensfr1/ha-ecoflow-ocean2?style=for-the-badge)](https://github.com/jensfr1/ha-ecoflow-ocean2/issues)
+[![Letzter Commit](https://img.shields.io/github/last-commit/jensfr1/ha-ecoflow-ocean2?style=for-the-badge)](https://github.com/jensfr1/ha-ecoflow-ocean2/commits/main)
+[![Lizenz](https://img.shields.io/github/license/jensfr1/ha-ecoflow-ocean2?style=for-the-badge)](LICENSE)
+
 Livedaten deines EcoFlow Ocean 2 in Home Assistant — PV, Batterie, Netz, Phasen
 und Batteriemodule, alle ~10 Sekunden aktualisiert.
+
+[![Zu HACS hinzufügen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jensfr1&repository=ha-ecoflow-ocean2&category=integration)
 
 ## Warum noch eine Integration?
 
@@ -32,6 +41,15 @@ verifiziert (Abweichung ~1 %).
 ## Installation
 
 ### HACS (empfohlen)
+
+[![Zu HACS hinzufügen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jensfr1&repository=ha-ecoflow-ocean2&category=integration)
+
+Ein Klick auf den Knopf öffnet das Repository direkt in deinem eigenen Home
+Assistant — ohne URL-Kopieren. Dann *Herunterladen*, und Home Assistant neu
+starten.
+
+Von Hand, falls der Knopf nicht funktioniert (er setzt eingerichtetes My Home
+Assistant voraus):
 
 1. HACS → Integrationen → ⋮ → *Benutzerdefinierte Repositories*
 2. URL dieses Repos eintragen, Kategorie *Integration*
