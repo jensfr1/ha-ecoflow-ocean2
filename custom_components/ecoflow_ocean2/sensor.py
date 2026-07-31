@@ -351,7 +351,15 @@ class EcoflowModuleSensor(EcoflowModuleEntity, SensorEntity):
     """Messwert eines Batteriemoduls."""
 
     #: Reihenfolge, in der die Sensoren je Modul angelegt werden.
-    MEASURE_KEYS = ("soc", "temperature", "voltage", "power", "soh", "cycles")
+    MEASURE_KEYS = (
+        "soc",
+        "temperature",
+        "cell_voltage",
+        "remaining_energy",
+        "power",
+        "soh",
+        "cycles",
+    )
 
     #: Messgroesse -> (Geraeteklasse, Einheit, Nachkommastellen, Feld im Snapshot)
     _MEASURES = {
@@ -362,11 +370,20 @@ class EcoflowModuleSensor(EcoflowModuleEntity, SensorEntity):
             1,
             "temperature",
         ),
-        "voltage": (
+        # Hoechste Zellspannung, nicht die Packspannung - die meldet das
+        # Ocean 2 in keinem beobachteten Feld. Drei Nachkommastellen, weil
+        # sich hier alles im Millivoltbereich abspielt.
+        "cell_voltage": (
             SensorDeviceClass.VOLTAGE,
             UnitOfElectricPotential.VOLT,
-            1,
-            "voltage",
+            3,
+            "cell_voltage",
+        ),
+        "remaining_energy": (
+            SensorDeviceClass.ENERGY_STORAGE,
+            UnitOfEnergy.WATT_HOUR,
+            0,
+            "remaining_wh",
         ),
         "power": (SensorDeviceClass.POWER, UnitOfPower.WATT, 0, "power_w"),
         # Alterungszustand: bewusst ohne Geraeteklasse. BATTERY waere der

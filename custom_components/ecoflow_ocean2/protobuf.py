@@ -227,9 +227,11 @@ class Po2BatteryPack:
     sn: str
     soc_percent: float
     real_soc: float
-    full_capacity_wh: float
+    #: Verbleibende Energie in Wh (Feld 54) - nicht die Kapazitaet
+    remaining_wh: float
     temp_c: float
-    voltage_v: float
+    #: Hoechste Zellspannung in V (Feld 6). Die Packspannung meldet das Geraet nicht.
+    cell_voltage_v: float
     #: Modul-Leistung in W: positiv = laden, negativ = entladen
     power_w: float = 0.0
     #: Alterungszustand in %
@@ -474,14 +476,29 @@ def _decode_po2_battery_pack(pdata: bytes) -> Po2BatteryPack | None:
     pack_index = int(_num(p, 15))
     if pack_index < 1:
         return None
+    # Korrigiert am 31.07.2026 nach einem Hinweis von Sebastian
+    # (ecoflow-energy-ha) und an der laufenden Anlage nachgemessen:
+    #
+    #   54  ist die Restenergie, NICHT die volle Kapazitaet. Gemessen 4114 Wh
+    #       bei 81,5 % und 4137 Wh bei 82,0 % - macht rund 5046 Wh Vollkapazitaet.
+    #       Als Kapazitaet gelesen sinkt der Wert beim Entladen; am Schreibtisch
+    #       faellt das nicht auf, im Betrieb ist es dauerhaft irrefuehrend.
+    #   39  ist der SoH, nicht der SoC: ueber die gesamte Messung konstant 100,0,
+    #       waehrend 38 sich bewegte. Das Paar 38/39 spiegelt 2/3.
+    #    6  ist eine Zellspannung (3329 mV), keine Packspannung - sie folgt der
+    #       Last. Das Teilen durch 10 war schon ein Warnzeichen: Ein float
+    #       braucht keine Skalierung.
+    #
+    # Die Packspannung liegt in keinem beobachteten Feld und wird deshalb gar
+    # nicht mehr gemeldet, statt einen falschen Wert auszuweisen.
     return Po2BatteryPack(
         pack_index=pack_index,
         sn=_bytes(p, 16).decode("utf-8", errors="ignore"),
-        soc_percent=_num(p, 39),
+        soc_percent=_num(p, 38),
         real_soc=_num(p, 38),
-        full_capacity_wh=_num(p, 54),
+        remaining_wh=_num(p, 54),
         temp_c=_num(p, 21),
-        voltage_v=_num(p, 6) / 10,
+        cell_voltage_v=_num(p, 6) / 1000,
         # 1/3/17 tragen dieselbe Bedeutung wie bei der aelteren Generation -
         # geprueft am 28.07.2026: 1122,59 W / 100 % / 4 Zyklen an einem vier
         # Wochen alten System.

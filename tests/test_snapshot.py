@@ -88,11 +88,13 @@ class TestMehrereNachrichten:
                     Po2BatteryPack(
                         pack_index=index,
                         sn=f"PACK{index}",
-                        soc_percent=100.0,
+                        soc_percent=soc,
                         real_soc=soc,
-                        full_capacity_wh=5024.0,
+                        # Restenergie und Zellspannung - siehe Feldkorrektur
+                        # vom 31.07.2026 in protobuf.py
+                        remaining_wh=4114.4,
                         temp_c=38.0,
-                        voltage_v=325.8,
+                        cell_voltage_v=3.329,
                     )
                 ]
             )

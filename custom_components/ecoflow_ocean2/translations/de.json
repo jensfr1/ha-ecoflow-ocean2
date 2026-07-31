@@ -96,9 +96,6 @@
       "module_temperature": {
         "name": "Temperatur Modul {index}"
       },
-      "module_voltage": {
-        "name": "Spannung Modul {index}"
-      },
       "grid_imported_energy": {
         "name": "Netzbezug"
       },
@@ -125,6 +122,12 @@
       },
       "module_cycles": {
         "name": "Modul {index} Ladezyklen"
+      },
+      "module_cell_voltage": {
+        "name": "Modul {index} Zellspannung"
+      },
+      "module_remaining_energy": {
+        "name": "Modul {index} verbleibende Energie"
       }
     },
     "binary_sensor": {

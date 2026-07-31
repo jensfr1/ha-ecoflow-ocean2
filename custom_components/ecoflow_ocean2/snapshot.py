@@ -40,8 +40,13 @@ class BatteryModule:
     sn: str
     soc: float
     temperature: float
-    voltage: float
-    capacity_wh: float
+    #: Verbleibende Energie in Wh, nicht die Kapazitaet
+    remaining_wh: float
+    #: Packspannung in V - nur die aeltere Generation meldet sie
+    voltage: float | None = None
+    #: Hoechste Zellspannung in V (Ocean 2). Eine Packspannung liefert das
+    #: Geraet dort in keinem beobachteten Feld.
+    cell_voltage: float | None = None
     #: Modul-Leistung in W: positiv = laden, negativ = entladen
     power_w: float | None = None
     #: Alterungszustand in %
@@ -229,7 +234,7 @@ def merge_snapshot(
             soc=pack.real_soc or pack.soc,
             temperature=pack.temp_env,
             voltage=pack.vol,
-            capacity_wh=pack.remain_wh,
+            remaining_wh=pack.remain_wh,
             power_w=pack.pwr,
             soh_percent=pack.soh,
             cycles=int(pack.cycles),
@@ -267,8 +272,8 @@ def merge_snapshot(
             sn=po2_pack.sn,
             soc=po2_pack.real_soc or po2_pack.soc_percent,
             temperature=po2_pack.temp_c,
-            voltage=po2_pack.voltage_v,
-            capacity_wh=po2_pack.full_capacity_wh,
+            cell_voltage=po2_pack.cell_voltage_v,
+            remaining_wh=po2_pack.remaining_wh,
             power_w=po2_pack.power_w,
             soh_percent=po2_pack.soh_percent,
             cycles=po2_pack.cycles,
