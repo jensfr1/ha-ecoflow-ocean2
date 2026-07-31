@@ -291,6 +291,20 @@ is down. Treat the message as "no contact", not as "power failure".
   written at most every 10 seconds. That noticeably relieves the database and
   the SD card.
 
+## A value looks wrong?
+
+Then it is almost certainly the field mapping, not Home Assistant — this
+generation sends in an undocumented message class, and a field can mean
+something else on your system than on mine. That is how the worst bug so far
+was found: what looked like the grid meter turned out to be a user's export
+limit.
+
+**[→ How to check values and capture raw data](DEBUGGING.md)**
+
+The guide covers diagnostics, debug logging, what to note down from the app
+alongside it, and a script that strips your serial number from the capture
+before you post it.
+
 ## Development
 
 ```bash

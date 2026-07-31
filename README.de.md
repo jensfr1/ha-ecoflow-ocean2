@@ -294,6 +294,20 @@ Internet weg ist. Die Meldung heißt „kein Kontakt", nicht „Stromausfall".
 - **Gedrosselte Updates:** Das Gerät sendet alle ~2 Sekunden; geschrieben wird
   höchstens alle 10 Sekunden. Das entlastet Datenbank und SD-Karte spürbar.
 
+## Ein Wert sieht falsch aus?
+
+Dann liegt es fast sicher an der Feldzuordnung, nicht an Home Assistant — diese
+Generation sendet in einer undokumentierten Nachrichtenklasse, und ein Feld
+kann an deiner Anlage etwas anderes bedeuten als an meiner. So kam der bisher
+gröbste Fehler ans Licht: Was wie der Netzzähler aussah, war in Wahrheit die
+Einspeisebegrenzung eines Nutzers.
+
+**[→ Werte prüfen und Rohdaten liefern](DEBUGGING.de.md)**
+
+Die Anleitung erklärt Diagnosedaten, Debug-Protokollierung, was du parallel aus
+der App notieren solltest, und ein Skript, das deine Seriennummer aus dem
+Mitschnitt entfernt, bevor du ihn weitergibst.
+
 ## Entwicklung
 
 ```bash
