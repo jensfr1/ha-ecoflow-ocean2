@@ -186,3 +186,59 @@ class TestHauslast:
         t = decode_mqtt_payload(bytes.fromhex(TestNetzleistung.HEX)).po2_telemetry
         assert t is not None
         assert t.house_power_w is None
+
+
+class TestBatteriemodul:
+    """cmdId 46 - der Modul-Report.
+
+    Aufgezeichnet am 01.08.2026 waehrend einer Wallbox-Ladung, Seriennummern
+    anonymisiert. Das Modul entlud mit 2664 W - deshalb liegt die
+    Leistungselektronik 25 K ueber den Zellen.
+
+    Die Temperaturzuordnung stammt aus einem Lastversuch ueber 45 Minuten.
+    Entscheidend war die Dynamik, nicht der Absolutwert: Bei einer sich
+    insgesamt aufheizenden Anlage korreliert jeder traege Sensor zufaellig mit
+    der Last, weshalb ein blosser Mittelwertvergleich neun von zehn Feldern
+    faelschlich als Leistungselektronik ausweist.
+    """
+
+    HEX = (
+        "0a9b030aee02081e2ae9020d8e8126c5102f18642a14000024420000204200001c420000184200001c4235007049453d0000494540014d9a997f415578e128c35dbd73404965229a22c86800721400704945004049450030494500004945000049457801820110524531325858585858585858585858588801069001009d0100a0be45a50100e0c445ad0100001842b50100006042bd0100006c42c50100007042cd0100006842d001ab838001d80199d67ee001909513e8019e9413f50100002442fd0100001842850200007c428d02000074429002009802ffff03a00221a80291d4b6d306b50246a04342bd020000c842c00200c80205d00264d80201e00200e80283d001f00201f802a0828408800385808408880302900301980301a003c4c209a803c09710b503c3931645bd03740c4042c50300000000cd0346a04342d50346a04342dd033033dc3fe5035db9c742ed039af1c742f00300f8030080040088048a95029004d78802a00402ad040050494510601820200140fe01482e50ee0278fe01800103880101c2011052453131585858585858585858585858"
+    )
+
+    @pytest.fixture
+    def pack(self):
+        return decode_mqtt_payload(bytes.fromhex(self.HEX)).po2_battery_packs[0]
+
+    def test_liest_ladestand_leistung_und_zyklen(self, pack) -> None:
+        assert pack.pack_index == 1
+        assert round(pack.soc_percent, 1) == 48.9
+        assert round(pack.power_w, 1) == -2664.1
+        assert pack.cycles == 6
+
+    def test_spannung_mal_strom_ergibt_die_leistung(self, pack) -> None:
+        assert round(pack.voltage_v, 2) == 15.98
+        assert round(pack.current_a, 2) == -168.88
+        # Auf wenige Prozent genau - mehr ist nicht zu erwarten, weil Feld 6
+        # die hoechste Zellspannung ist und nicht den Durchschnitt meldet
+        assert abs(pack.voltage_v * pack.current_a - pack.power_w) < 100
+
+    def test_bestaetigt_den_5s_aufbau(self, pack) -> None:
+        # 16 V wirken fuer einen Hausspeicher unplausibel - bis man durch die
+        # Zellspannung teilt und genau 5 Zellen in Reihe herauskommen.
+        assert round(pack.voltage_v / pack.cell_voltage_v) == 5
+
+    def test_trennt_zelltemperatur_von_leistungselektronik(self, pack) -> None:
+        assert pack.temp_c == 38
+        assert pack.temp_min_cell_c == 38
+        assert pack.temp_max_cell_c == 41
+        # Waermster der vier Halbleiter-Sensoren (59/60/63/61)
+        assert pack.temp_mos_c == 63
+
+    def test_haelt_die_reihenfolge_min_mittel_max_ein(self, pack) -> None:
+        # Gilt in beiden Modulen ueber beide Messreihen - der Grund, die Felder
+        # 31/21/30 als min/mittel/max zu lesen.
+        assert pack.temp_min_cell_c <= pack.temp_c <= pack.temp_max_cell_c
+
+    def test_haelt_die_elektronik_deutlich_ueber_den_zellen(self, pack) -> None:
+        assert pack.temp_mos_c > pack.temp_max_cell_c

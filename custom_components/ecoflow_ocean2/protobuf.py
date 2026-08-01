@@ -100,6 +100,17 @@ def _num(fields: dict[int, list[Any]], num: int, fallback: float = 0.0) -> float
     return float(value) if isinstance(value, (int, float)) else fallback
 
 
+def _max_of(fields: dict[int, list[Any]], nums: tuple[int, ...]) -> float:
+    """Groesster Wert aus mehreren gleichartigen Feldern.
+
+    Fuer Sensorgruppen, bei denen nur der waermste Punkt interessiert. Nicht
+    vorhandene Felder werden uebergangen statt als 0 zu zaehlen, sonst zoege ein
+    fehlendes Feld das Maximum nach unten.
+    """
+    values = [_num(fields, n) for n in nums if n in fields]
+    return max(values) if values else 0.0
+
+
 def _bytes(fields: dict[int, list[Any]], num: int) -> bytes:
     """Erster Wert eines Feldes als Bytes."""
     values = fields.get(num)
@@ -229,9 +240,20 @@ class Po2BatteryPack:
     real_soc: float
     #: Verbleibende Energie in Wh (Feld 54) - nicht die Kapazitaet
     remaining_wh: float
+    #: Mittlere Zelltemperatur in Grad C (Feld 21)
     temp_c: float
-    #: Hoechste Zellspannung in V (Feld 6). Die Packspannung meldet das Geraet nicht.
+    #: Hoechste Zellspannung in V (Feld 6)
     cell_voltage_v: float
+    #: Niedrigste Zelltemperatur in Grad C (Feld 31)
+    temp_min_cell_c: float = 0.0
+    #: Hoechste Zelltemperatur in Grad C (Feld 30)
+    temp_max_cell_c: float = 0.0
+    #: Waermster Punkt der Leistungselektronik in Grad C (Felder 23/24/32/33)
+    temp_mos_c: float = 0.0
+    #: Packspannung in V (Feld 9)
+    voltage_v: float = 0.0
+    #: Modulstrom in A: positiv = laden, negativ = entladen (Feld 10)
+    current_a: float = 0.0
     #: Modul-Leistung in W: positiv = laden, negativ = entladen
     power_w: float = 0.0
     #: Alterungszustand in %
@@ -489,8 +511,28 @@ def _decode_po2_battery_pack(pdata: bytes) -> Po2BatteryPack | None:
     #       Last. Das Teilen durch 10 war schon ein Warnzeichen: Ein float
     #       braucht keine Skalierung.
     #
-    # Die Packspannung liegt in keinem beobachteten Feld und wird deshalb gar
-    # nicht mehr gemeldet, statt einen falschen Wert auszuweisen.
+    # Nachtrag vom 31.07.2026: Die Packspannung gibt es doch - in Feld 9. Sie
+    # war uebersehen worden, weil 16,5 V fuer einen Hausspeicher unplausibel
+    # niedrig wirken. Die Module sind aber 5S aufgebaut: 16,46 V geteilt durch
+    # 3,311 V je Zelle ergibt genau 5 Zellen in Reihe. Bestaetigt ueber die
+    # Leistungsbilanz - Feld 9 mal Feld 10 trifft Feld 1 auf 1 % genau, bei
+    # beiden Modulen unabhaengig.
+    #
+    # Die Temperaturfelder wurden am 01.08.2026 ueber einen Lastversuch getrennt
+    # (45 min Wallbox, bis 3,6 kW je Modul). Entscheidend ist die Dynamik, nicht
+    # der Absolutwert - bei einer sich insgesamt aufheizenden Anlage korreliert
+    # jeder traege Sensor zufaellig mit der Last:
+    #
+    #   23/24/32/33  folgen der Last binnen einer Minute, 11-17 K Hub, bis
+    #                7 K/min, und fallen ebenso schnell wieder ab. Das kann nur
+    #                Leistungselektronik sein.
+    #   31 <= 21 <= 30  gilt in beiden Modulen zu jedem Zeitpunkt beider
+    #                Messreihen. Alle drei steigen ueber 45 min monoton um 4-6 K
+    #                und ignorieren Lastwechsel - Zelltemperatur min/mittel/max.
+    #   22/25        traege wie die Zellen, liegen aber bei 42-54 C. Vermutlich
+    #                Kuehlkoerper oder Gehaeuse; nicht uebernommen.
+    #   36           steht in beiden Modulen und ueber beide Messreihen konstant
+    #                auf 33 - keine Temperatur, sondern ein fester Wert.
     return Po2BatteryPack(
         pack_index=pack_index,
         sn=_bytes(p, 16).decode("utf-8", errors="ignore"),
@@ -498,7 +540,12 @@ def _decode_po2_battery_pack(pdata: bytes) -> Po2BatteryPack | None:
         real_soc=_num(p, 38),
         remaining_wh=_num(p, 54),
         temp_c=_num(p, 21),
+        temp_min_cell_c=_num(p, 31),
+        temp_max_cell_c=_num(p, 30),
+        temp_mos_c=_max_of(p, (23, 24, 32, 33)),
         cell_voltage_v=_num(p, 6) / 1000,
+        voltage_v=_num(p, 9),
+        current_a=_num(p, 10),
         # 1/3/17 tragen dieselbe Bedeutung wie bei der aelteren Generation -
         # geprueft am 28.07.2026: 1122,59 W / 100 % / 4 Zyklen an einem vier
         # Wochen alten System.

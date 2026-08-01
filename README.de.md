@@ -84,8 +84,11 @@ automatisch neu ab (Reauth).
 Netzleistung (+ Bezug / − Einspeisung), Hausverbrauch, Wechselrichter-Ausgang,
 Gesamtleistung aller Phasen, Leistung je PV-String.
 
-**Batterie:** Ladestand, verbleibende Energie, „lädt"-Status; je Modul
-Ladestand, Temperatur und Spannung (als eigenes Untergerät).
+**Batterie:** Ladestand, verbleibende Energie, „lädt"-Status. Jedes Modul
+erscheint als eigenes Untergerät mit Ladestand, verbleibender Energie,
+Leistung, Alterungszustand, Zyklen, Packspannung, Strom, Zellspannung und vier
+Temperaturen: kälteste Zelle, mittlere Zelle, wärmste Zelle und
+Leistungselektronik.
 
 **Phasen:** Spannung, Strom und Wirkleistung je Phase — standardmäßig
 deaktiviert, um die Geräteseite übersichtlich zu halten. Bei Bedarf in den
@@ -273,6 +276,18 @@ Internet weg ist. Die Meldung heißt „kein Kontakt", nicht „Stromausfall".
 - **Gesamtleistung aller Phasen** ist die Summe der Einzelphasen. Sie bleibt
   leer, solange eine Phase ihren Wert noch nicht gemeldet hat — eine Teilsumme
   wäre zu niedrig und damit irreführend.
+- **Die Packspannung eines Moduls** liegt bei rund 16,5 V, nicht bei der
+  Hochvoltspannung, die man bei einem Hausspeicher erwarten würde. Die Module
+  sind 5S aufgebaut: Teilt man die Packspannung durch die Zellspannung, kommen
+  genau 5 Zellen in Reihe heraus. Packspannung mal Strom trifft die gemeldete
+  Modulleistung auf 1 % genau.
+- **Die Modultemperaturen** wurden über einen Lastversuch zugeordnet, nicht aus
+  ihren Werten geraten. Vier Felder folgen der Last binnen einer Minute und
+  fallen ebenso schnell wieder ab — Leistungselektronik, davon veröffentlicht
+  die Integration den wärmsten. Drei weitere bewegen sich nur träge, ignorieren
+  Lastwechsel und halten untereinander stets dieselbe Reihenfolge: minimale,
+  mittlere und maximale Zelltemperatur. Unter Last liegt die Elektronik deutlich
+  über den Zellen; 20 K Abstand und mehr sind normal und kein Fehler.
 
 > **Was der Hausverbrauch wirklich bedeutet:** Das Gerät meldet, was dein Haus
 > *zusätzlich* zu allem braucht, was hinter seinem Messpunkt einspeist. Läuft

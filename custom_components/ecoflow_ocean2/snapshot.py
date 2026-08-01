@@ -39,14 +39,22 @@ class BatteryModule:
     index: int
     sn: str
     soc: float
+    #: Mittlere Zelltemperatur in Grad C
     temperature: float
     #: Verbleibende Energie in Wh, nicht die Kapazitaet
     remaining_wh: float
+    #: Niedrigste Zelltemperatur in Grad C (Ocean 2, Feld 31)
+    temp_min_cell: float | None = None
+    #: Hoechste Zelltemperatur in Grad C (Ocean 2, Feld 30)
+    temp_max_cell: float | None = None
+    #: Waermster Punkt der Leistungselektronik in Grad C (Ocean 2)
+    temp_mos: float | None = None
     #: Packspannung in V - nur die aeltere Generation meldet sie
     voltage: float | None = None
-    #: Hoechste Zellspannung in V (Ocean 2). Eine Packspannung liefert das
-    #: Geraet dort in keinem beobachteten Feld.
+    #: Hoechste Zellspannung in V (Ocean 2)
     cell_voltage: float | None = None
+    #: Modulstrom in A: positiv = laden, negativ = entladen
+    current: float | None = None
     #: Modul-Leistung in W: positiv = laden, negativ = entladen
     power_w: float | None = None
     #: Alterungszustand in %
@@ -127,20 +135,20 @@ def apply_grid_deadband(watt: float) -> float:
 
 
 def compute_house_load(snapshot: Snapshot) -> float | None:
-    """Hauslast aus den beiden Quellen am Hausknoten.
+    """Hauslast berechnen - nur als Rueckfallebene.
 
-    Das Geraet meldet die Hauslast nicht direkt. Am Hausknoten haengen aber
-    genau zwei Quellen: der Wechselrichter (der PV und Batterie bereits
-    verrechnet hat) und das Netz.
+    Das Geraet meldet die Hauslast selbst (Feld 7.1/87.1), und dieser Wert ist
+    dem hier berechneten vorzuziehen: Er stammt aus demselben Moment wie PV,
+    Batterie und Netz und bilanziert exakt mit ihnen.
 
-        Last = Wechselrichter-Ausgang + Netzbezug
+    Die Rechnung hier addiert die beiden Quellen am Hausknoten - den
+    Wechselrichter-Ausgang und den Netzbezug. Sie faellt systematisch zu
+    niedrig aus, weil die Felder 4.1 und 4.13 unabhaengig voneinander
+    aktualisiert werden und damit aus verschiedenen Momenten stammen. Am
+    29.07.2026 standen so 2018 W gerechnet gegen 2100 W gemeldet, im Log einer
+    anderen Anlage 306 W gegen 490 W.
 
-    Das ist genauer als der Umweg ueber ``PV - Batterie + Netz``, weil die
-    Wandlungsverluste schon im Wechselrichterwert stecken. Gegengeprueft am
-    27.07.2026: 183 + (-2) = 181 W, das Geraet meldete im selben Moment 171 W.
-    Beim Laden aus dem Netz: -1530 + 1719 = 189 W.
-
-    Fehlt einer der beiden Werte, greift die alte Bilanz als Rueckfallebene.
+    Fehlt auch der Wechselrichterwert, greift die Bilanz PV - Batterie + Netz.
     """
     if snapshot.inverter_power_w is not None and snapshot.grid_power_w is not None:
         return max(0.0, snapshot.inverter_power_w + snapshot.grid_power_w)
@@ -272,7 +280,12 @@ def merge_snapshot(
             sn=po2_pack.sn,
             soc=po2_pack.real_soc or po2_pack.soc_percent,
             temperature=po2_pack.temp_c,
+            temp_min_cell=po2_pack.temp_min_cell_c,
+            temp_max_cell=po2_pack.temp_max_cell_c,
+            temp_mos=po2_pack.temp_mos_c,
             cell_voltage=po2_pack.cell_voltage_v,
+            voltage=po2_pack.voltage_v,
+            current=po2_pack.current_a,
             remaining_wh=po2_pack.remaining_wh,
             power_w=po2_pack.power_w,
             soh_percent=po2_pack.soh_percent,

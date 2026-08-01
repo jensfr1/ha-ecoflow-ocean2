@@ -81,8 +81,11 @@ EcoFlow rejects the password later on, Home Assistant asks for it again
 (+ import / − export), house consumption, inverter output, total power across
 all phases, power per PV string.
 
-**Battery:** state of charge, remaining energy, "charging" status; per module
-state of charge, temperature and voltage (as its own sub-device).
+**Battery:** state of charge, remaining energy, "charging" status. Each module
+appears as its own sub-device with state of charge, remaining energy, power,
+state of health, cycles, pack voltage, current, cell voltage and four
+temperatures: coldest cell, average cell, hottest cell and the power
+electronics.
 
 **Phases:** voltage, current and active power per phase — disabled by default to
 keep the device page readable. Enable them in the entity settings if you need
@@ -269,6 +272,17 @@ is down. Treat the message as "no contact", not as "power failure".
 - **Total power across all phases** is the sum of the individual phases. It
   stays empty as long as one phase has not reported its value yet — a partial
   sum would be too low and therefore misleading.
+- **Module pack voltage** is around 16.5 V, not the high voltage you might
+  expect from a home battery. The modules are wired 5S: divide the pack voltage
+  by the cell voltage and you get exactly 5 cells in series. Pack voltage times
+  current matches the reported module power to within 1 %.
+- **The module temperatures** were assigned through a load test rather than
+  guessed from their values. Four fields follow the load within a minute and
+  fall just as fast — power electronics, of which the integration publishes the
+  hottest. Three others move only slowly, ignore load changes and always keep
+  the same order among themselves: minimum, average and maximum cell
+  temperature. Under load the electronics run well above the cells; a spread of
+  20 K or more is normal, not a fault.
 
 > **What house consumption really means:** the device reports what your house
 > draws *on top of* everything that feeds in behind its meter. If you run a

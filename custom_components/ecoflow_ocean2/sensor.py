@@ -354,7 +354,12 @@ class EcoflowModuleSensor(EcoflowModuleEntity, SensorEntity):
     MEASURE_KEYS = (
         "soc",
         "temperature",
+        "temp_min_cell",
+        "temp_max_cell",
+        "temp_mos",
         "cell_voltage",
+        "voltage",
+        "current",
         "remaining_energy",
         "power",
         "soh",
@@ -364,20 +369,58 @@ class EcoflowModuleSensor(EcoflowModuleEntity, SensorEntity):
     #: Messgroesse -> (Geraeteklasse, Einheit, Nachkommastellen, Feld im Snapshot)
     _MEASURES = {
         "soc": (SensorDeviceClass.BATTERY, PERCENTAGE, 1, "soc"),
+        # Die Temperaturfelder wurden ueber einen Lastversuch zugeordnet: 31,
+        # 21 und 30 stehen in beiden Modulen durchgehend in dieser Reihenfolge
+        # und ignorieren Lastwechsel, sind also min/mittel/max der Zellen. Die
+        # Felder 23/24/32/33 folgen der Last binnen einer Minute mit bis zu
+        # 17 K Hub - Leistungselektronik. Davon nur der waermste Punkt, weil
+        # vier fast gleiche Kurven je Modul niemandem helfen.
         "temperature": (
             SensorDeviceClass.TEMPERATURE,
             UnitOfTemperature.CELSIUS,
             1,
             "temperature",
         ),
-        # Hoechste Zellspannung, nicht die Packspannung - die meldet das
-        # Ocean 2 in keinem beobachteten Feld. Drei Nachkommastellen, weil
-        # sich hier alles im Millivoltbereich abspielt.
+        "temp_min_cell": (
+            SensorDeviceClass.TEMPERATURE,
+            UnitOfTemperature.CELSIUS,
+            1,
+            "temp_min_cell",
+        ),
+        "temp_max_cell": (
+            SensorDeviceClass.TEMPERATURE,
+            UnitOfTemperature.CELSIUS,
+            1,
+            "temp_max_cell",
+        ),
+        "temp_mos": (
+            SensorDeviceClass.TEMPERATURE,
+            UnitOfTemperature.CELSIUS,
+            1,
+            "temp_mos",
+        ),
+        # Hoechste Zellspannung, nicht die Packspannung - die steht in Feld 9
+        # und wird als "voltage" gemeldet. Drei Nachkommastellen, weil sich
+        # hier alles im Millivoltbereich abspielt.
         "cell_voltage": (
             SensorDeviceClass.VOLTAGE,
             UnitOfElectricPotential.VOLT,
             3,
             "cell_voltage",
+        ),
+        # Packspannung: 5 Zellen in Reihe, also rund 16,5 V - nicht die
+        # Hochvoltspannung, die man bei einem Hausspeicher erwarten wuerde.
+        "voltage": (
+            SensorDeviceClass.VOLTAGE,
+            UnitOfElectricPotential.VOLT,
+            2,
+            "voltage",
+        ),
+        "current": (
+            SensorDeviceClass.CURRENT,
+            UnitOfElectricCurrent.AMPERE,
+            2,
+            "current",
         ),
         "remaining_energy": (
             SensorDeviceClass.ENERGY_STORAGE,

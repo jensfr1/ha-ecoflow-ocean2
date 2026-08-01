@@ -94,7 +94,16 @@
         "name": "Module {index} battery"
       },
       "module_temperature": {
-        "name": "Module {index} temperature"
+        "name": "Module {index} cell temperature"
+      },
+      "module_temp_min_cell": {
+        "name": "Module {index} coldest cell"
+      },
+      "module_temp_max_cell": {
+        "name": "Module {index} hottest cell"
+      },
+      "module_temp_mos": {
+        "name": "Module {index} power electronics"
       },
       "grid_imported_energy": {
         "name": "Grid consumption"
@@ -128,6 +137,12 @@
       },
       "module_remaining_energy": {
         "name": "Module {index} remaining energy"
+      },
+      "module_voltage": {
+        "name": "Module {index} pack voltage"
+      },
+      "module_current": {
+        "name": "Module {index} current"
       }
     },
     "binary_sensor": {

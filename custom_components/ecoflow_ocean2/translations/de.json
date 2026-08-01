@@ -94,7 +94,16 @@
         "name": "Ladestand Modul {index}"
       },
       "module_temperature": {
-        "name": "Temperatur Modul {index}"
+        "name": "Zelltemperatur Modul {index}"
+      },
+      "module_temp_min_cell": {
+        "name": "Kälteste Zelle Modul {index}"
+      },
+      "module_temp_max_cell": {
+        "name": "Wärmste Zelle Modul {index}"
+      },
+      "module_temp_mos": {
+        "name": "Leistungselektronik Modul {index}"
       },
       "grid_imported_energy": {
         "name": "Netzbezug"
@@ -128,6 +137,12 @@
       },
       "module_remaining_energy": {
         "name": "Modul {index} verbleibende Energie"
+      },
+      "module_voltage": {
+        "name": "Modul {index} Packspannung"
+      },
+      "module_current": {
+        "name": "Modul {index} Strom"
       }
     },
     "binary_sensor": {
