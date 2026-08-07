@@ -28,4 +28,10 @@ async def async_get_config_entry_diagnostics(
         "entry": async_redact_data(dict(entry.data), REDACT),
         "connected": coordinator.connected,
         "snapshot": async_redact_data(asdict(snapshot), REDACT) if snapshot else None,
+        # Rohnachrichten je Typ. Das ist der Teil, mit dem sich Geraete
+        # unterstuetzen lassen, die diese Integration noch nicht kennt - der
+        # Snapshot darueber zeigt nur, was sie ohnehin schon versteht.
+        # Seriennummern sind bereits in capture.py entfernt; async_redact_data
+        # wuerde einen Hex-String nicht als solche erkennen.
+        "capture": coordinator.capture.as_diagnostics(),
     }

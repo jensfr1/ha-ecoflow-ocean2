@@ -30,6 +30,7 @@ from .const import (
     RECONNECT_BACKOFF_MAX,
     RECONNECT_BACKOFF_START,
 )
+from .capture import FrameCapture
 from .protobuf import decode_mqtt_payload
 from .snapshot import Snapshot, merge_snapshot
 
@@ -71,6 +72,8 @@ class EcoflowCoordinator(DataUpdateCoordinator[Snapshot]):
         self._snapshot: Snapshot | None = None
         self._last_push = 0.0
         self._last_message = 0.0
+        #: Mitschnitt fuer die Diagnose - siehe capture.py.
+        self._capture = FrameCapture(device_sn)
         self._connected = False
         self._first_data = asyncio.Event()
         self._tasks: set[asyncio.Task] = set()
@@ -186,8 +189,18 @@ class EcoflowCoordinator(DataUpdateCoordinator[Snapshot]):
             # als aktuell auszugeben.
             self.async_update_listeners()
 
+    @property
+    def capture(self) -> FrameCapture:
+        """Mitschnitt der Rohnachrichten, nur fuer die Diagnose."""
+        return self._capture
+
     @callback
     def _handle_payload(self, payload: bytes) -> None:
+        # Vor dem Dekodieren: Was der Parser nicht versteht, kehrt unten
+        # stillschweigend zurueck - und genau das ist bei einem unbekannten
+        # Geraet das Interessante.
+        self._capture.add(payload)
+
         try:
             message = decode_mqtt_payload(payload)
         except Exception:  # noqa: BLE001 - ein defektes Paket darf nichts reissen

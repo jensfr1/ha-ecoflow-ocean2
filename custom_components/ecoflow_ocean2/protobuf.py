@@ -555,6 +555,42 @@ def _decode_po2_battery_pack(pdata: bytes) -> Po2BatteryPack | None:
     )
 
 
+@dataclass(frozen=True)
+class Frame:
+    """Ein entschluesselter Teilrahmen einer MQTT-Nachricht.
+
+    Eine Nachricht buendelt mehrere davon, jeden mit eigenem Befehlspaar.
+    """
+
+    cmd_func: int
+    cmd_id: int
+    pdata: bytes
+
+
+def iter_frames(raw: bytes) -> list[Frame]:
+    """Zerlegt eine MQTT-Payload in ihre Teilrahmen.
+
+    Bewusst ohne jede Kenntnis darueber, welche Befehlspaare diese Integration
+    versteht: Der Mitschnitt in ``capture.py`` braucht gerade die, die sie
+    nicht versteht, und der waere auf einen zweiten Zerleger angewiesen, wenn
+    diese Funktion schon aussortieren wuerde.
+    """
+    frames: list[Frame] = []
+    for header_raw in _decode_fields(raw).get(1, []):
+        if not isinstance(header_raw, bytes):
+            continue
+        h = _decode_fields(header_raw)
+        pdata = _bytes(h, 1)
+        if not pdata:
+            continue
+        if int(_num(h, 6)) == 1:
+            pdata = _xor_decrypt(pdata, int(_num(h, 14)))
+        frames.append(
+            Frame(cmd_func=int(_num(h, 8)), cmd_id=int(_num(h, 9)), pdata=pdata)
+        )
+    return frames
+
+
 def decode_mqtt_payload(raw: bytes) -> DecodedMessage:
     """Dekodiert eine rohe MQTT-Payload.
 
@@ -562,22 +598,11 @@ def decode_mqtt_payload(raw: bytes) -> DecodedMessage:
     Ergebnis (``has_payload() is False``).
     """
     result = DecodedMessage()
-    outer = _decode_fields(raw)
 
-    for header_raw in outer.get(1, []):
-        if not isinstance(header_raw, bytes):
-            continue
-        h = _decode_fields(header_raw)
-        cmd_func = int(_num(h, 8))
-        cmd_id = int(_num(h, 9))
-        enc_type = int(_num(h, 6))
-        seq = int(_num(h, 14))
-
-        pdata = _bytes(h, 1)
-        if not pdata:
-            continue
-        if enc_type == 1:
-            pdata = _xor_decrypt(pdata, seq)
+    for frame in iter_frames(raw):
+        cmd_func = frame.cmd_func
+        cmd_id = frame.cmd_id
+        pdata = frame.pdata
 
         if cmd_func == 96:
             if cmd_id == 1:

@@ -1,13 +1,17 @@
 {
   "domain": "ecoflow_ocean2",
   "name": "EcoFlow Ocean 2",
-  "codeowners": ["@jensfr1"],
+  "codeowners": [
+    "@jensfr1"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/jensfr1/ha-ecoflow-ocean2",
   "integration_type": "device",
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/jensfr1/ha-ecoflow-ocean2/issues",
-  "loggers": ["paho"],
+  "loggers": [
+    "paho"
+  ],
   "requirements": [],
-  "version": "0.4.1"
+  "version": "0.5.0"
 }

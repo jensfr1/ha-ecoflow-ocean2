@@ -25,12 +25,23 @@ Often enough when a single value looks wrong.
 
 *Settings → Devices & Services → EcoFlow Ocean 2 → ⋮ → **Download diagnostics***
 
-The file contains the current state of every value. Credentials and the serial
-number are already stripped — you can attach it to an issue as it is.
+The file contains the current state of every value. Credentials and serial
+numbers are already stripped — you can attach it to an issue as it is.
+
+**Since v0.5.0 the raw frames are included**, under `capture`: one sample per
+message type, how often it arrived, and whether this integration decodes it at
+all. If `unknown_types` lists anything, your unit sends more than is known
+here — that is the most interesting case, and it used to be invisible.
+
+For a device this integration does not know yet (a serial other than `RE11…`),
+this is the only step needed: set it up, let it run for a day, download
+diagnostics.
 
 ## The thorough route: capturing raw frames
 
-Needed when the mapping itself is wrong — then I have to see the bytes.
+Rarely needed since v0.5.0 — the diagnostics above already carry the frames.
+This route adds the time dimension: several messages of the same type in
+sequence. That is what it takes when a value jumps or drifts.
 
 ### 1. Turn on debug logging
 

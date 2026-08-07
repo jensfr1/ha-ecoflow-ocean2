@@ -28,12 +28,25 @@ Reicht oft schon, wenn nur ein einzelner Wert falsch aussieht.
 herunterladen***
 
 Die Datei enthält den aktuellen Zustand aller Werte. Zugangsdaten und
-Seriennummer sind bereits entfernt — du kannst sie bedenkenlos an ein Issue
+Seriennummern sind bereits entfernt — du kannst sie bedenkenlos an ein Issue
 anhängen.
+
+**Seit v0.5.0 stecken die Rohframes mit drin**, unter `capture`. Je
+Nachrichtentyp ein Beispiel, wie oft er kam, und ob diese Integration ihn
+überhaupt auswertet. Steht unter `unknown_types` etwas, sendet dein Gerät
+mehr, als hier bekannt ist — das ist der interessanteste Fall, und genau der
+war vorher unsichtbar.
+
+Für ein Gerät, das diese Integration noch gar nicht kennt (andere
+Seriennummer als `RE11…`), ist das der einzige nötige Schritt: einrichten,
+einen Tag laufen lassen, Diagnose herunterladen.
 
 ## Der gründliche Weg: Rohframes mitschneiden
 
-Nötig, wenn die Zuordnung selbst falsch ist — dann muss ich die Bytes sehen.
+Seit v0.5.0 nur noch selten nötig — die Diagnose oben enthält die Frames
+bereits. Der Weg hier liefert darüber hinaus den zeitlichen Verlauf, also
+mehrere Nachrichten desselben Typs nacheinander. Das braucht es, wenn ein
+Wert springt oder driftet.
 
 ### 1. Debug-Protokollierung einschalten
 
