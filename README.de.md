@@ -28,6 +28,26 @@ Für das **EcoFlow Ocean 2** (Seriennummern beginnend mit `RE11`) liefert bislan
 | App-REST-API (`provider-service/user/device/detail`) | Antwortet mit `code 0`, aber **leerem** Datenteil |
 | Modbus TCP | Nur nach Freischaltung durch den Installateur |
 
+### Welche Geräte das abdeckt
+
+Die Zuordnung entstand an einem `RE11` und wurde gegen einen Mitschnitt aus
+einer zweiten, unabhängigen Anlage bestätigt. Bei den übrigen Geräten der
+Reihe ist dasselbe Protokoll zu erwarten:
+
+| Präfix | Gerät | Stand |
+|---|---|---|
+| `RE11` | Ocean 2, 10 kW | an zwei Anlagen bestätigt |
+| `RE17` | Ocean 2, 12 kW | derselbe Lesepfad - EcoFlows Geräteliste trennt es von `RE11` nur durch die Leistungsangabe |
+| `RE41` | Ocean 2 Plus, 8 kW, einphasig | von einem Besitzer gemeldet, noch kein Mitschnitt |
+| `RE43` | Ocean 2 Plus, 12 kW | von einem Besitzer gemeldet, noch kein Mitschnitt |
+
+**Nichts davon hängt am Präfix.** Der Einrichtungsdialog nimmt jede
+Seriennummer an, ein nicht gelistetes Gerät lässt sich also einfach
+ausprobieren. Ob es läuft oder nicht - eine kurze Rückmeldung im Issue ist
+willkommen; das ist es, was eine Zeile von „gemeldet" auf „bestätigt" bringt.
+Eine Diagnose-Datei enthält die Rohframes und klärt es am schnellsten (siehe
+[DEBUGGING.de.md](DEBUGGING.de.md)).
+
 Der einzige funktionierende Weg ist das **App-MQTT** von EcoFlow. Dort sendet
 das Gerät Protobuf-Telemetrie — die neue Generation allerdings in der
 Nachrichtenklasse **`cmdFunc 254`** (`cmdId 39` = Telemetrie, `cmdId 46` =

@@ -33,9 +33,10 @@ message type, how often it arrived, and whether this integration decodes it at
 all. If `unknown_types` lists anything, your unit sends more than is known
 here — that is the most interesting case, and it used to be invisible.
 
-For a device this integration does not know yet (a serial other than `RE11…`),
-this is the only step needed: set it up, let it run for a day, download
-diagnostics.
+For a unit of the series that is not confirmed here yet - `RE17`, `RE41`,
+`RE43`, or a serial not listed at all - this is the only step needed: set it
+up, let it run for a day, download diagnostics. The setup dialog accepts any
+serial, so nothing has to be unlocked first.
 
 ## The thorough route: capturing raw frames
 

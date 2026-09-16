@@ -28,6 +28,25 @@ available solution returns data:
 | App REST API (`provider-service/user/device/detail`) | Answers `code 0` with an **empty** payload |
 | Modbus TCP | Only after the installer unlocks it |
 
+### Which units this covers
+
+The mapping was built on an `RE11` and confirmed against a recording from a
+second, unrelated installation. Other units of the series are expected to
+speak the same protocol:
+
+| Prefix | Unit | Status |
+|---|---|---|
+| `RE11` | Ocean 2, 10 kW | confirmed on two installations |
+| `RE17` | Ocean 2, 12 kW | same read path - EcoFlow's device list separates it from `RE11` by power rating and nothing else |
+| `RE41` | Ocean 2 Plus, 8 kW, single-phase | reported by an owner, no capture yet |
+| `RE43` | Ocean 2 Plus, 12 kW | reported by an owner, no capture yet |
+
+**Nothing here is gated on the prefix.** The setup dialog accepts any serial,
+so a unit that is not listed can simply be tried. If yours works - or does not -
+a short note in an issue is welcome; that is what moves a row from "reported"
+to "confirmed". A diagnostics download carries the raw frames and is the
+fastest way to settle it (see [DEBUGGING.md](DEBUGGING.md)).
+
 The one route that works is EcoFlow's **app MQTT**. The device sends protobuf
 telemetry there — but this generation uses message class **`cmdFunc 254`**
 (`cmdId 39` = telemetry, `cmdId 46` = battery module), which was not documented

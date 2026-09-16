@@ -37,9 +37,11 @@ Nachrichtentyp ein Beispiel, wie oft er kam, und ob diese Integration ihn
 mehr, als hier bekannt ist — das ist der interessanteste Fall, und genau der
 war vorher unsichtbar.
 
-Für ein Gerät, das diese Integration noch gar nicht kennt (andere
-Seriennummer als `RE11…`), ist das der einzige nötige Schritt: einrichten,
-einen Tag laufen lassen, Diagnose herunterladen.
+Für ein Gerät der Reihe, das hier noch nicht bestätigt ist - `RE17`, `RE41`,
+`RE43` oder eine Seriennummer, die hier gar nicht steht -, ist das der einzige
+nötige Schritt: einrichten, einen Tag laufen lassen, Diagnose herunterladen.
+Der Einrichtungsdialog nimmt jede Seriennummer an, es muss also nichts
+freigeschaltet werden.
 
 ## Der gründliche Weg: Rohframes mitschneiden
 

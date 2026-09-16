@@ -12,8 +12,8 @@ rekonstruiert. Aufbau:
 Nachrichtenklassen:
     cmdFunc 96  - aeltere Generation: 1=EMS-Heartbeat, 7=Batterie-Packs,
                   33=Energiefluss
-    cmdFunc 254 - neue Generation (SN ``RE11...``): 39=Telemetrie,
-                  46=Batterie-Modul
+    cmdFunc 254 - neue Generation (Ocean 2, SN ``RE11``/``RE17``, mutmasslich
+                  auch ``RE41``/``RE43``): 39=Telemetrie, 46=Batterie-Modul
 
 Bewusst ohne externe Protobuf-Bibliothek: Ein handgeschriebener Wire-Format-
 Parser ist hier kleiner und robuster, weil es kein ``.proto``-Schema gibt.
