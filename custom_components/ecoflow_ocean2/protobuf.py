@@ -372,6 +372,10 @@ def _decode_energy_stream(pdata: bytes) -> EnergyStream:
 def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
     f = _decode_fields(pdata)
     result = Po2Telemetry()
+    #: Werte aus Block 65 bzw. 4 - nur gueltig, wenn der Flussblock schweigt.
+    pv_rueckfall: float | None = None
+    batterie_rueckfall: float | None = None
+    netz_rueckfall: float | None = None
 
     # Feld 65 = Systemzusammenfassung.
     #   4  = PV-Leistung
@@ -383,7 +387,8 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
     summary_raw = f.get(65, [None])[0]
     if isinstance(summary_raw, bytes):
         s = _decode_fields(summary_raw)
-        result.pv_power_w = _num(s, 4)
+        # Nur als Rueckfallebene - der Flussblock unten gewinnt, siehe dort.
+        pv_rueckfall = _num(s, 4) if 4 in s else None
         result.soc_percent = _num(s, 17)
         result.remaining_wh = _num(s, 15)
         # Feld 20 ist die Batterieleistung - vorzeichenbehaftet, mit umgekehrter
@@ -403,9 +408,8 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
         # beim letzten Flussblock tat. Der Flussblock gewinnt trotzdem, wo
         # beide da sind: Er ist der Block, der mit den drei anderen Werten
         # desselben Augenblicks bilanziert.
-        batterie_summe = _num(s, 20)
         if 20 in s:
-            result.battery_power_w = -batterie_summe
+            batterie_rueckfall = -_num(s, 20)
 
     # Feld 7 (bzw. 87) = Energiefluss-Zusammenfassung, so wie die App sie zeigt.
     #   1 = Hauslast
@@ -424,9 +428,12 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
     # gewinnt: Im Log vom 28.07.2026 meldete Block 7 eine Hauslast von 550 W
     # und Block 87 gleichzeitig 560 W - die App zeigte 560 W.
     #
-    # Block 65 bleibt die erste Wahl fuer die PV-Leistung; nur wenn er nichts
-    # geliefert hat, springt Block 7/87 ein.
-    pv_aus_summary = result.pv_power_w is not None and result.pv_power_w != 0
+    # Der Flussblock gewinnt fuer alle vier Werte. Die Einzelfelder 65.4 (PV)
+    # und 4.13 (Netz) sind feiner aufgeloest - Block 87 rundet auf 10 W -, aber
+    # jedes von ihnen liest seinen eigenen Augenblick. Vier Werte aus einem
+    # Augenblick, die zueinander bilanzieren, sind fuer eine Anzeige mehr wert
+    # als 10 W Aufloesung: Sonst zeigt die Uebersicht eine Hauslast, die nicht
+    # aufgeht, und genau daran ist die Bilanz hier im August aufgefallen.
     for block_nr in (7, 87):
         gen_raw = f.get(block_nr, [None])[0]
         if not isinstance(gen_raw, bytes):
@@ -436,11 +443,9 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
         # Feld einen bereits gelesenen guten Wert mit 0 ueberschreiben.
         if 1 in g:
             result.house_power_w = _num(g, 1)
-        # Vorlaeufig; Feld 4.13 weiter unten hat Vorrang, weil es feiner
-        # aufgeloest ist und in nahezu jeder Nachricht steckt.
         if 2 in g:
             result.grid_power_w = _num(g, 2)
-        if not pv_aus_summary and 3 in g:
+        if 3 in g:
             result.pv_power_w = _num(g, 3)
         if 4 in g:
             result.battery_power_w = _num(g, 4)
@@ -468,7 +473,7 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
         # (weshalb der Fehler lange unbemerkt blieb), an einer Anlage mit
         # 10-kW-Begrenzung meldete es konstant 10000.
         if 13 in p:
-            result.grid_power_w = _num(p, 13)
+            netz_rueckfall = _num(p, 13)
 
         phase_block = p.get(3, [None])[0]
         if isinstance(phase_block, bytes):
@@ -501,6 +506,17 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
                 index = int(_num(e, 1))
                 if index >= 1 and 4 in e:
                     result.pv_strings[index] = _num(e, 4)
+
+
+    # Rueckfallebenen: Was der Flussblock nicht geliefert hat, kommt aus den
+    # Einzelfeldern. Eine Nachricht ohne Block 7/87 traegt sonst gar nichts,
+    # obwohl PV, Netz und Batterie in ihr stehen.
+    if result.pv_power_w is None and pv_rueckfall is not None:
+        result.pv_power_w = pv_rueckfall
+    if result.grid_power_w is None and netz_rueckfall is not None:
+        result.grid_power_w = netz_rueckfall
+    if result.battery_power_w is None and batterie_rueckfall is not None:
+        result.battery_power_w = batterie_rueckfall
 
     return result
 

@@ -198,7 +198,9 @@ class TestEchtePayload:
         assert message.has_payload()
         snapshot = merge_snapshot(SN, None, message, now=1785000000.0)
         assert snapshot.sn == SN
-        assert round(snapshot.pv_power_w) == 1127
+        # Aus dem Flussblock, der auf 10 W rundet; 65.4 meldet im selben
+        # Rahmen 1127 W und ist nur noch Rueckfallebene.
+        assert round(snapshot.pv_power_w) == 1150
         assert snapshot.battery_soc == 100
         assert snapshot.battery_remaining_wh == 10048
         # Diese Aufzeichnung enthaelt keinen Wechselrichter-Block, also auch

@@ -86,7 +86,9 @@ class TestSummary:
 
     def test_liest_pv_batterie_soc(self, summary) -> None:
         t = summary.po2_telemetry
-        assert round(t.pv_power_w) == 1127
+        # Aus dem Flussblock, der auf 10 W rundet - 65.4 meldet im selben
+        # Rahmen 1127 W und ist nur noch Rueckfallebene.
+        assert round(t.pv_power_w) == 1150
         assert t.battery_power_w == 0
         assert t.soc_percent == 100
 
@@ -220,19 +222,30 @@ class TestHauslast:
         assert t is not None
         assert t.house_power_w == 490
         # Was die alte Rechnung ergeben haette - deutlich daneben
-        assert round(t.pcs_total_w + t.grid_power_w) == 306
+        assert round(t.pcs_total_w + t.grid_power_w) == 502
 
     def test_bilanziert_mit_pv_batterie_und_netz(self) -> None:
         t = decode_mqtt_payload(bytes.fromhex(self.HEX)).po2_telemetry
         assert t is not None
         assert t.pv_power_w == 2570
         assert t.battery_power_w == 310
-        assert t.pv_power_w - t.battery_power_w - 1770 == t.house_power_w
+        # Die vier Werte stammen aus einem Augenblick und gehen ohne
+        # Hilfskonstante auf - frueher stand hier die 1770 aus Block 87,
+        # weil grid_power_w aus 4.13 kam und um knapp 200 W danebenlag.
+        assert t.pv_power_w - t.battery_power_w + t.grid_power_w == t.house_power_w
 
-    def test_feld_4_13_hat_vorrang_vor_7_2(self) -> None:
+    def test_flussblock_hat_vorrang_vor_feld_4_13(self) -> None:
+        """Beide Quellen im selben Rahmen - der Flussblock gewinnt.
+
+        4.13 ist feiner aufgeloest, liest aber seinen eigenen Augenblick: hier
+        -1966,4 W gegen -1770 W im Flussblock, knapp 200 W auseinander. Nur mit
+        dem Flussblockwert geht die Bilanz des Rahmens auf (siehe oben), und
+        eine Uebersicht, deren vier Zahlen nicht zueinander passen, ist der
+        Grund, aus dem diese Reihenfolge ueberhaupt geprueft wurde.
+        """
         t = decode_mqtt_payload(bytes.fromhex(self.HEX)).po2_telemetry
         assert t is not None
-        assert round(t.grid_power_w, 1) == -1966.4
+        assert t.grid_power_w == -1770
 
     def test_ohne_block_7_bleibt_hauslast_leer(self) -> None:
         t = decode_mqtt_payload(bytes.fromhex(TestNetzleistung.HEX)).po2_telemetry
