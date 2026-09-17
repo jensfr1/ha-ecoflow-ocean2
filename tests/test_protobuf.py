@@ -7,6 +7,8 @@ Weichen diese Tests ab, ist die Portierung fehlerhaft.
 
 from __future__ import annotations
 
+import struct
+
 import pytest
 
 from custom_components.ecoflow_ocean2.protobuf import decode_mqtt_payload
@@ -35,6 +37,35 @@ SUMMARY_HEX = (
 def _hex(value: str) -> bytes:
     return bytes.fromhex(value)
 
+def _varint(value: int) -> bytes:
+    out = bytearray()
+    while value > 0x7F:
+        out.append((value & 0x7F) | 0x80)
+        value >>= 7
+    out.append(value)
+    return bytes(out)
+
+
+def _f32(field: int, value: float) -> bytes:
+    """Ein 32-Bit-Float-Feld - so sendet das Geraet jede Leistungsangabe."""
+    return _varint((field << 3) | 5) + struct.pack("<f", value)
+
+
+def _msg(field: int, body: bytes) -> bytes:
+    """Eine laengenpraefixierte Untermessage."""
+    return _varint((field << 3) | 2) + _varint(len(body)) + body
+
+
+def _frame(pdata: bytes, cmd_func: int = 254, cmd_id: int = 39) -> bytes:
+    """Eine Nachricht mit genau einem Rahmen."""
+    header = (
+        _msg(1, pdata)
+        + _varint((8 << 3) | 0) + _varint(cmd_func)
+        + _varint((9 << 3) | 0) + _varint(cmd_id)
+    )
+    return _msg(1, header)
+
+
 
 @pytest.fixture(name="summary")
 def summary_fixture():
@@ -58,6 +89,27 @@ class TestSummary:
         assert round(t.pv_power_w) == 1127
         assert t.battery_power_w == 0
         assert t.soc_percent == 100
+
+    def test_batterieleistung_ist_signiert_und_gedreht(self) -> None:
+        """Feld 65.20 ist kein Betrag, sondern negativ waehrend des Ladens.
+
+        Gemessen am 17.09.2026 an einem RE11 waehrend einer Ladung: hier -871,
+        -862, -852 W, gleichzeitig +880, +830, +850 W im Flussblock. Ohne diese
+        Umkehr blieb die Leistung in Nachrichten ohne Flussblock auf dem alten
+        Wert stehen - ein ladender Akku meldete, was er Minuten zuvor tat.
+        """
+        pdata = _msg(65, _f32(20, -871.0))
+        t = decode_mqtt_payload(_frame(pdata)).po2_telemetry
+        assert t is not None
+        assert t.battery_power_w == pytest.approx(871.0)
+
+    def test_flussblock_schlaegt_die_zusammenfassung(self) -> None:
+        # Beide da: Der Flussblock gewinnt, weil er mit den drei anderen
+        # Werten desselben Augenblicks bilanziert.
+        pdata = _msg(65, _f32(20, -871.0)) + _msg(87, _f32(4, 880.0))
+        t = decode_mqtt_payload(_frame(pdata)).po2_telemetry
+        assert t is not None
+        assert t.battery_power_w == pytest.approx(880.0)
 
     def test_ohne_wechselrichterblock_keine_netzleistung(self, summary) -> None:
         """Diese Aufzeichnung enthaelt nur Block 65, also kein Feld 4.13.

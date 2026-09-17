@@ -377,7 +377,7 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
     #   4  = PV-Leistung
     #   15 = verbleibende Akku-Energie in Wh
     #   17 = System-SoC
-    #   20 = Batterieleistung als Betrag
+    #   20 = Batterieleistung, signiert - negativ = laden (siehe unten)
     # ACHTUNG: 65.6 ist NICHT der Netzzaehler, sondern der Wechselrichter-
     # Ausgang. Und 65.7 ist es ebenso wenig - siehe Feld 4.13 weiter unten.
     summary_raw = f.get(65, [None])[0]
@@ -386,10 +386,26 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
         result.pv_power_w = _num(s, 4)
         result.soc_percent = _num(s, 17)
         result.remaining_wh = _num(s, 15)
-        # Betrag exakt 0 heisst: Akku ruht. Feld 7.4 fehlt dann in den anderen
-        # Nachrichten, deshalb hier explizit setzen (Vorzeichen kommt aus 7.4).
-        if _num(s, 20) == 0:
-            result.battery_power_w = 0.0
+        # Feld 20 ist die Batterieleistung - vorzeichenbehaftet, mit umgekehrter
+        # Konvention: negativ waehrend der Akku laedt.
+        #
+        # Frueher stand hier die Annahme, es sei ein Betrag, und der Wert wurde
+        # nur bei exakt 0 uebernommen. Gemessen am 17.09.2026 ueber 17
+        # aufeinanderfolgende Frames waehrend einer Ladung: -871, -862, -852 W
+        # hier gegen +880, +830, +850 W in Feld 7.4/87.4. Die Betraege folgen
+        # einander im ueblichen Versatz zwischen den Bloecken, das Vorzeichen
+        # ist durchgehend gedreht. Dasselbe zeigen 13 Frames aus einer
+        # fremden Anlage, wo 65.20 exakt dem negierten 7.4 entsprach.
+        #
+        # Das schliesst eine echte Luecke: In einer Nachricht, die nur Block 65
+        # traegt, blieb die Leistung sonst auf dem letzten Wert aus dem
+        # Flussblock stehen - ein mit 5 kW ladender Akku meldete weiter, was er
+        # beim letzten Flussblock tat. Der Flussblock gewinnt trotzdem, wo
+        # beide da sind: Er ist der Block, der mit den drei anderen Werten
+        # desselben Augenblicks bilanziert.
+        batterie_summe = _num(s, 20)
+        if 20 in s:
+            result.battery_power_w = -batterie_summe
 
     # Feld 7 (bzw. 87) = Energiefluss-Zusammenfassung, so wie die App sie zeigt.
     #   1 = Hauslast
