@@ -275,6 +275,18 @@ class TestBatteriemodul:
     def pack(self):
         return decode_mqtt_payload(bytes.fromhex(self.HEX)).po2_battery_packs[0]
 
+    def test_liest_den_alterungszustand_aus_feld_39(self, pack) -> None:
+        """Feld 39, nicht 3 - unterscheidbar nur am Wire-Typ.
+
+        Beide tragen auf einem gesunden Modul konstant 100, die Werte koennen
+        sie also nicht trennen. Feld 3 kommt als Varint, 39 als Float; das
+        Paar 38/39 spiegelt 2/3 der aelteren Generation, und 38 ist der
+        Ladestand, der sich bewegt. Geprueft an Rohframes dieser Anlage und
+        an einem fremden Mitschnitt ueber 98 Records.
+        """
+        assert pack.soh_percent == 100.0
+        assert pack.real_soc != pack.soh_percent
+
     def test_liest_ladestand_leistung_und_zyklen(self, pack) -> None:
         assert pack.pack_index == 1
         assert round(pack.soc_percent, 1) == 48.9

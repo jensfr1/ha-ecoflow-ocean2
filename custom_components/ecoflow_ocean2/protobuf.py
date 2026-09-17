@@ -582,7 +582,13 @@ def _decode_po2_battery_pack(pdata: bytes) -> Po2BatteryPack | None:
         # geprueft am 28.07.2026: 1122,59 W / 100 % / 4 Zyklen an einem vier
         # Wochen alten System.
         power_w=_num(p, 1),
-        soh_percent=_num(p, 3),
+        # Feld 39, nicht 3. Beide tragen auf einem gesunden Modul konstant
+        # 100, die Werte koennen sie also nicht unterscheiden - der Wire-Typ
+        # schon: 3 kommt als Varint, 39 als Float. Geprueft an Rohframes
+        # dieser Anlage und bestaetigt an einem fremden Mitschnitt ueber
+        # 98 Records. Das Paar 38/39 spiegelt 2/3 der aelteren Generation,
+        # und 38 ist der Ladestand, der sich bewegt.
+        soh_percent=_num(p, 39),
         cycles=int(_num(p, 17)),
     )
 
