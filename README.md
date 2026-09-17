@@ -38,7 +38,7 @@ speak the same protocol:
 |---|---|---|
 | `RE11` | Ocean 2, 10 kW | confirmed on two installations |
 | `RE17` | Ocean 2, 12 kW | same read path - EcoFlow's device list separates it from `RE11` by power rating and nothing else |
-| `RE41` | Ocean 2 Plus, 8 kW, single-phase | reported by an owner, no capture yet |
+| `RE41` | Ocean 2 Plus, 8 kW, single-phase | confirmed on one installation - its owner ran this integration on his unit and saw the inverter and both battery modules; his capture carries the `RE11`'s field numbers throughout |
 | `RE43` | Ocean 2 Plus, 12 kW | reported by an owner, no capture yet |
 
 **Nothing here is gated on the prefix.** The setup dialog accepts any serial,

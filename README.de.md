@@ -38,7 +38,7 @@ Reihe ist dasselbe Protokoll zu erwarten:
 |---|---|---|
 | `RE11` | Ocean 2, 10 kW | an zwei Anlagen bestätigt |
 | `RE17` | Ocean 2, 12 kW | derselbe Lesepfad - EcoFlows Geräteliste trennt es von `RE11` nur durch die Leistungsangabe |
-| `RE41` | Ocean 2 Plus, 8 kW, einphasig | von einem Besitzer gemeldet, noch kein Mitschnitt |
+| `RE41` | Ocean 2 Plus, 8 kW, einphasig | an einer Anlage bestätigt - der Besitzer hat diese Integration an seinem Gerät laufen lassen und sah den Wechselrichter und beide Batteriemodule; sein Mitschnitt trägt durchgehend die Feldnummern des `RE11` |
 | `RE43` | Ocean 2 Plus, 12 kW | von einem Besitzer gemeldet, noch kein Mitschnitt |
 
 **Nichts davon hängt am Präfix.** Der Einrichtungsdialog nimmt jede
