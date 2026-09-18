@@ -409,7 +409,9 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
         # beide da sind: Er ist der Block, der mit den drei anderen Werten
         # desselben Augenblicks bilanziert.
         if 20 in s:
-            batterie_rueckfall = -_num(s, 20)
+            # 0.0 - x statt -x: ein ruhender Akku (Rohwert 0) ergaebe sonst
+            # -0.0, und Home Assistant zeigte "-0.0 W".
+            batterie_rueckfall = 0.0 - _num(s, 20)
 
     # Feld 7 (bzw. 87) = Energiefluss-Zusammenfassung, so wie die App sie zeigt.
     #   1 = Hauslast
