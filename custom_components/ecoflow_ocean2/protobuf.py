@@ -363,7 +363,7 @@ def _decode_energy_stream(pdata: bytes) -> EnergyStream | None:
 
     Das Ocean 2 Plus (``RE42``) sendet unter derselben Kennung 96/33 etwas ganz
     anderes: zwei Seriennummern als Text in Feld 1 und 4, kleine Ganzzahlen in
-    Feld 2 und 5. Als Energiefluss gelesen setzte das alle zehn Sekunden die
+    Feld 2 und 5. Als Energiefluss gelesen setzte das etwa alle vier Sekunden die
     Hauslast und die Batterie auf 0 W, das Netz auf 0 bis 3 W und den Ladestand
     auf genau 1 % (#4). Ein echter Energiefluss traegt seine Leistungen als
     Float; ein Rahmen, dessen Leistungsfelder etwas anderes enthalten, ist
