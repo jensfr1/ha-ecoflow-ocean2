@@ -358,8 +358,21 @@ def _decode_battery_packs(pdata: bytes) -> list[BatteryPack]:
     return packs
 
 
-def _decode_energy_stream(pdata: bytes) -> EnergyStream:
+def _decode_energy_stream(pdata: bytes) -> EnergyStream | None:
+    """Energiefluss der aelteren Generation - oder None, wenn der Rahmen keiner ist.
+
+    Das Ocean 2 Plus (``RE42``) sendet unter derselben Kennung 96/33 etwas ganz
+    anderes: zwei Seriennummern als Text in Feld 1 und 4, kleine Ganzzahlen in
+    Feld 2 und 5. Als Energiefluss gelesen setzte das alle zehn Sekunden die
+    Hauslast und die Batterie auf 0 W, das Netz auf 0 bis 3 W und den Ladestand
+    auf genau 1 % (#4). Ein echter Energiefluss traegt seine Leistungen als
+    Float; ein Rahmen, dessen Leistungsfelder etwas anderes enthalten, ist
+    keiner und wird verworfen.
+    """
     f = _decode_fields(pdata)
+    powers = [values[0] for n in (1, 2, 3, 4) if (values := f.get(n))]
+    if not powers or not all(isinstance(value, float) for value in powers):
+        return None
     return EnergyStream(
         sys_load_pwr=_num(f, 1),
         sys_grid_pwr=_num(f, 2),
@@ -367,6 +380,11 @@ def _decode_energy_stream(pdata: bytes) -> EnergyStream:
         bp_pwr=_num(f, 4),
         bp_soc=_num(f, 5),
     )
+
+
+def is_energy_stream(pdata: bytes) -> bool:
+    """True, wenn ein 96/33-Rahmen wirklich ein Energiefluss ist."""
+    return _decode_energy_stream(pdata) is not None
 
 
 def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:

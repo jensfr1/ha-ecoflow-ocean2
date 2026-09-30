@@ -319,3 +319,29 @@ class TestBatteriemodul:
 
     def test_haelt_die_elektronik_deutlich_ueber_den_zellen(self, pack) -> None:
         assert pack.temp_mos_c > pack.temp_max_cell_c
+
+
+class TestFremderEnergiefluss:
+    """96/33 vom Ocean 2 Plus (``RE42``), Seriennummern bereits maskiert (#4).
+
+    Feld 1 und 4 sind Seriennummern als Text, Feld 2 und 5 kleine Ganzzahlen.
+    Frueher wurde daraus Hauslast 0 W, Netz 3 W, Batterie 0 W und SoC 1 %.
+    """
+
+    PDATA = (
+        "0a1058585858585858585858585858585858100322105858585858585858585858585858"
+        "58582801"
+    )
+
+    def test_wird_nicht_als_energiefluss_gelesen(self):
+        message = decode_mqtt_payload(_frame(_hex(self.PDATA), cmd_func=96, cmd_id=33))
+        assert message.energy_stream is None
+
+    def test_echter_energiefluss_wird_weiter_gelesen(self):
+        pdata = _f32(1, 450.0) + _f32(2, -12.5) + _f32(3, 520.0) + _f32(4, 57.5)
+        stream = decode_mqtt_payload(_frame(pdata, cmd_func=96, cmd_id=33)).energy_stream
+        assert stream is not None
+        assert stream.sys_load_pwr == 450.0
+        assert stream.sys_grid_pwr == -12.5
+        assert stream.mppt_pwr == 520.0
+        assert stream.bp_pwr == 57.5

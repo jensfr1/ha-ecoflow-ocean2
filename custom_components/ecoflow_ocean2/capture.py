@@ -28,7 +28,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from .protobuf import iter_frames
+from .protobuf import is_energy_stream, iter_frames
 
 #: Befehlspaare, die der Parser auswertet. Alles andere ist ein Fund.
 KNOWN: frozenset[tuple[int, int]] = frozenset(
@@ -88,7 +88,12 @@ class FrameCapture:
 
         for frame in frames:
             key = f"{frame.cmd_func}/{frame.cmd_id}"
-            self._store(key, frame.pdata, known=(frame.cmd_func, frame.cmd_id) in KNOWN)
+            known = (frame.cmd_func, frame.cmd_id) in KNOWN
+            if known and (frame.cmd_func, frame.cmd_id) == (96, 33):
+                # Das Ocean 2 Plus sendet unter dieser Kennung keinen
+                # Energiefluss; der Parser verwirft den Rahmen (#4).
+                known = is_energy_stream(frame.pdata)
+            self._store(key, frame.pdata, known=known)
 
     def _store(self, key: str, data: bytes, *, known: bool) -> None:
         existing = self._samples.get(key)

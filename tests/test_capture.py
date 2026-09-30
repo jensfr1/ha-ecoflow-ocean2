@@ -97,6 +97,20 @@ class TestUnbekannteTypen:
         assert d["frames"]["254/39"]["known"] is True
         assert d["frames"]["36/2"]["known"] is False
 
+    def test_fremder_energiefluss_gilt_als_unbekannt(self) -> None:
+        # 96/33 vom Ocean 2 Plus: Seriennummern als Text statt Leistungen (#4).
+        # Der Parser verwirft ihn, also darf die Diagnose ihn nicht als
+        # verstanden ausweisen.
+        c = FrameCapture(SN)
+        c.add(frame(96, 33, _msg(1, b"X" * 16) + _vint(2, 3) + _msg(4, b"X" * 16)))
+        d = c.as_diagnostics()
+        assert d["unknown_types"] == ["96/33"]
+
+    def test_echter_energiefluss_gilt_als_bekannt(self) -> None:
+        c = FrameCapture(SN)
+        c.add(frame(96, 33, _f32(1, 450.0) + _f32(2, -12.5)))
+        assert c.as_diagnostics()["frames"]["96/33"]["known"] is True
+
     def test_haelt_auch_voellig_unlesbare_nachrichten_fest(self) -> None:
         c = FrameCapture(SN)
         c.add(b"\xff\xfe kein protobuf")
