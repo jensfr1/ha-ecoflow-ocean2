@@ -70,10 +70,6 @@ class TestMehrereNachrichten:
         assert result.grid_power_w == 0.0
         assert result.inverter_power_w == 1069.0
 
-    def test_ignoriert_soc_platzhalter_null(self) -> None:
-        result = _merge(_telemetry(soc_percent=87.0), _telemetry(soc_percent=0.0))
-        assert result.battery_soc == 87.0
-
     def test_mergt_pv_strings_inkrementell(self) -> None:
         result = _merge(
             _telemetry(pv_strings={1: 500.0}),
@@ -227,3 +223,19 @@ class TestNetzTotzone:
     )
     def test_schwelle(self, gemessen: float, erwartet: float) -> None:
         assert apply_grid_deadband(gemessen) == erwartet
+
+
+class TestLeererAkku:
+    """Ein Ladestand von 0 % ist ein echter Wert (#5)."""
+
+    def test_uebernimmt_0_prozent(self):
+        snapshot = _merge(_telemetry(soc_percent=5.0), _telemetry(soc_percent=0.0))
+        assert snapshot.battery_soc == 0.0
+
+    def test_uebernimmt_0_wh_restenergie(self):
+        snapshot = _merge(_telemetry(remaining_wh=120.0), _telemetry(remaining_wh=0.0))
+        assert snapshot.battery_remaining_wh == 0.0
+
+    def test_nachricht_ohne_ladestand_laesst_ihn_stehen(self):
+        snapshot = _merge(_telemetry(soc_percent=42.0), _telemetry(pv_power_w=100.0))
+        assert snapshot.battery_soc == 42.0

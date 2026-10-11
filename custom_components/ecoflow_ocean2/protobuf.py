@@ -407,8 +407,8 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
         s = _decode_fields(summary_raw)
         # Nur als Rueckfallebene - der Flussblock unten gewinnt, siehe dort.
         pv_rueckfall = _num(s, 4) if 4 in s else None
-        result.soc_percent = _num(s, 17)
-        result.remaining_wh = _num(s, 15)
+        result.soc_percent = _num(s, 17) if 17 in s else None
+        result.remaining_wh = _num(s, 15) if 15 in s else None
         # Feld 20 ist die Batterieleistung - vorzeichenbehaftet, mit umgekehrter
         # Konvention: negativ waehrend der Akku laedt.
         #

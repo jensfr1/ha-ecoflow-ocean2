@@ -345,3 +345,32 @@ class TestFremderEnergiefluss:
         assert stream.sys_grid_pwr == -12.5
         assert stream.mppt_pwr == 520.0
         assert stream.bp_pwr == 57.5
+
+
+class TestLeererAkku:
+    """254/39 von einem RE17 bei leerem Akku, aus der Diagnose in #5.
+
+    Block 65 traegt den Ladestand ausdruecklich als 0 und daneben eine
+    Restenergie von 66 Wh.
+    """
+
+    PDATA = (
+        "8a0442080010001800250000f0412d00f0284535000000803d000004434001480155000000"
+        "005d000000006000680070007842800100880100900142980101a50100f0334592013a0a1a"
+        "0d00e042451500904245180120042d0000f841350000e84138020a1a0d0040434515001043"
+        "45180120042d0000e041350000d04138011001"
+    )
+
+    def test_liest_den_ladestand_0_als_wert(self):
+        t = decode_mqttpayload_po2(self.PDATA)
+        assert t.soc_percent == 0
+        assert t.remaining_wh == 66
+
+    def test_ohne_block_65_kein_ladestand(self):
+        t = decode_mqtt_payload(_frame(_f32(1, 1.0))).po2_telemetry
+        assert t.soc_percent is None
+        assert t.remaining_wh is None
+
+
+def decode_mqttpayload_po2(pdata_hex: str):
+    return decode_mqtt_payload(_frame(_hex(pdata_hex))).po2_telemetry

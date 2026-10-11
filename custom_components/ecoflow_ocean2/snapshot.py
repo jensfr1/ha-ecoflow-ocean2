@@ -256,10 +256,13 @@ def merge_snapshot(
             snapshot.grid_power_w = apply_grid_deadband(telemetry.grid_power_w)
         if telemetry.battery_power_w is not None:
             snapshot.battery_power_w = telemetry.battery_power_w
-        # SoC 0 kommt in Teilnachrichten als Platzhalter vor
-        if telemetry.soc_percent:
+        # Ein leerer Akku meldet 0 % - ein echter Wert, kein Platzhalter. Block 65
+        # kommt in jeder Aufzeichnung vollstaendig, mit allen 20 Feldern, und
+        # traegt die 0 ausdruecklich; eine Wahrheitspruefung warf sie weg, und
+        # der Ladestand stand bei leerem Akku auf "unbekannt" (#5).
+        if telemetry.soc_percent is not None:
             snapshot.battery_soc = telemetry.soc_percent
-        if telemetry.remaining_wh:
+        if telemetry.remaining_wh is not None:
             snapshot.battery_remaining_wh = telemetry.remaining_wh
         if telemetry.pcs_total_w is not None:
             snapshot.inverter_power_w = telemetry.pcs_total_w
