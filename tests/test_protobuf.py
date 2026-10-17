@@ -374,3 +374,44 @@ class TestLeererAkku:
 
 def decode_mqttpayload_po2(pdata_hex: str):
     return decode_mqtt_payload(_frame(_hex(pdata_hex))).po2_telemetry
+
+
+class TestNetzfrequenz:
+    """Netz-Phasenblock 4.4: Frequenz der Phase A.
+
+    VOLL ist der Block eines einphasigen ``RE42`` aus einem Mitschnitt auf
+    shuette42/ecoflow-energy-ha#145: ein Datensatz ohne Index, Phase A mit
+    239,5 V und 49,94 Hz, Phase B und C mit Nullen. TEIL ist ein
+    Teil-Datensatz desselben Geraets, nur Feld 4 und 5.
+    """
+
+    VOLL = (
+        "0a0f0d000000001d0000000025000000000a160daa746f431585c917401d1cc1474225c0"
+        "9005c128010a160d0000000015000000001d00000000250000000028020a160d00000000"
+        "15000000001d0000000025000000002803"
+    )
+    TEIL = "0a072500dc40bf2801"
+
+    @staticmethod
+    def _telemetry(block: bytes):
+        return decode_mqtt_payload(_frame(_msg(4, _msg(4, block)))).po2_telemetry
+
+    @staticmethod
+    def _record(index: int, freq: float | None) -> bytes:
+        body = _f32(1, 230.0) + (_f32(3, freq) if freq is not None else b"")
+        return _msg(1, body + bytes([(5 << 3) | 0]) + _varint(index))
+
+    def test_einphasig_nimmt_phase_a_statt_der_leeren_phasen(self):
+        t = self._telemetry(_hex(self.VOLL))
+        assert t.grid_frequency_hz == pytest.approx(49.94, abs=0.005)
+
+    def test_teil_datensatz_ohne_frequenz_liefert_nichts(self):
+        assert self._telemetry(_hex(self.TEIL)).grid_frequency_hz is None
+
+    def test_netzausfall_zeigt_0_hz(self):
+        block = self._record(1, 0.0) + self._record(2, 0.0) + self._record(3, 0.0)
+        assert self._telemetry(block).grid_frequency_hz == 0.0
+
+    def test_ohne_frequenz_bei_phase_a_springt_eine_andere_ein(self):
+        block = self._record(1, None) + self._record(2, 50.02) + self._record(3, 50.02)
+        assert self._telemetry(block).grid_frequency_hz == pytest.approx(50.02, abs=0.005)

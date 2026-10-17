@@ -39,7 +39,8 @@ Reihe ist dasselbe Protokoll zu erwarten:
 | `RE11` | Ocean 2, 10 kW | an zwei Anlagen bestätigt |
 | `RE17` | Ocean 2, 12 kW | an einer Anlage bestätigt - ihre Diagnose trägt durchgehend die Feldnummern des `RE11` |
 | `RE41` | Ocean 2 Plus, 8 kW, einphasig | an einer Anlage bestätigt - der Besitzer hat diese Integration an seinem Gerät laufen lassen und sah den Wechselrichter und beide Batteriemodule; sein Mitschnitt trägt durchgehend die Feldnummern des `RE11` |
-| `RE43` | Ocean 2 Plus, 12 kW | von einem Besitzer gemeldet, noch kein Mitschnitt |
+| `RE42` | Ocean 2 Plus (laut Besitzer), einphasig | an einer Anlage bestätigt - ihre Diagnose trägt die Feldnummern des `RE11`; die AC-Leistung kommt mit umgekehrtem Vorzeichen und wird hier korrigiert |
+| `RE43` | Ocean 2 Plus, 12 kW, einphasig | an einer Anlage bestätigt durch shuette42/ecoflow-energy-ha: jedes hier gelesene Feld hat die Feldnummer des `RE11`; die AC-Leistung kommt mit umgekehrtem Vorzeichen und wird hier korrigiert |
 
 **Nichts davon hängt am Präfix.** Der Einrichtungsdialog nimmt jede
 Seriennummer an, ein nicht gelistetes Gerät lässt sich also einfach
@@ -112,7 +113,7 @@ Leistungselektronik.
 
 **Phasen:** Spannung, Strom und Wirkleistung je Phase — standardmäßig
 deaktiviert, um die Geräteseite übersichtlich zu halten. Bei Bedarf in den
-Entitätseinstellungen aktivieren.
+Entitätseinstellungen aktivieren. Die Netzfrequenz gibt es als eigenen Sensor.
 
 **Energie (für das Energie-Dashboard):** Netzbezug, Netzeinspeisung,
 Solarerzeugung, Batterie geladen/entladen, Hausverbrauch — als kWh-Zähler.

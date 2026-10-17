@@ -54,6 +54,9 @@
       "inverter_power": {
         "name": "Inverter output"
       },
+      "grid_frequency": {
+        "name": "Grid frequency"
+      },
       "phase_a_voltage": {
         "name": "Phase A voltage"
       },

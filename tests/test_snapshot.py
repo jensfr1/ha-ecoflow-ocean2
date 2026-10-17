@@ -239,3 +239,38 @@ class TestLeererAkku:
     def test_nachricht_ohne_ladestand_laesst_ihn_stehen(self):
         snapshot = _merge(_telemetry(soc_percent=42.0), _telemetry(pv_power_w=100.0))
         assert snapshot.battery_soc == 42.0
+
+
+class TestAcVorzeichen:
+    """RE42 und RE43 melden die AC-Leistung mit umgekehrtem Vorzeichen."""
+
+    @staticmethod
+    def _merge_sn(sn: str, **kwargs):
+        return merge_snapshot(sn, None, _telemetry(**kwargs), now=1.0)
+
+    def test_re42_wird_gedreht(self):
+        s = self._merge_sn("RE42TEST00000001", pcs_total_w=-4267.0,
+                           phases={1: {"act_pwr": -4267.0, "vol": 239.0}})
+        assert s.inverter_power_w == 4267.0
+        assert s.phases["a"].active_power == 4267.0
+        assert s.phases["a"].voltage == 239.0
+
+    def test_re43_wird_gedreht(self):
+        s = self._merge_sn("RE43TEST00000001", pcs_total_w=-7340.0)
+        assert s.inverter_power_w == 7340.0
+
+    def test_re11_bleibt(self):
+        s = self._merge_sn(SN, pcs_total_w=375.0, phases={1: {"act_pwr": 375.0}})
+        assert s.inverter_power_w == 375.0
+        assert s.phases["a"].active_power == 375.0
+
+    def test_ruhender_wechselrichter_bleibt_positive_null(self):
+        s = self._merge_sn("RE42TEST00000001", pcs_total_w=0.0)
+        assert s.inverter_power_w == 0.0
+        assert str(s.inverter_power_w) == "0.0"
+
+
+class TestNetzfrequenzImSnapshot:
+    def test_wird_uebernommen_und_bleibt_bei_fehlendem_wert(self):
+        s = _merge(_telemetry(grid_frequency_hz=49.94), _telemetry(pv_power_w=100.0))
+        assert s.grid_frequency_hz == 49.94

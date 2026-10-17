@@ -39,7 +39,8 @@ speak the same protocol:
 | `RE11` | Ocean 2, 10 kW | confirmed on two installations |
 | `RE17` | Ocean 2, 12 kW | confirmed on one installation - its diagnostics carry the `RE11`'s field numbers throughout |
 | `RE41` | Ocean 2 Plus, 8 kW, single-phase | confirmed on one installation - its owner ran this integration on his unit and saw the inverter and both battery modules; his capture carries the `RE11`'s field numbers throughout |
-| `RE43` | Ocean 2 Plus, 12 kW | reported by an owner, no capture yet |
+| `RE42` | Ocean 2 Plus (per its owner), single-phase | confirmed on one installation - its diagnostics carry the `RE11`'s field numbers; AC power is reported with the opposite sign and corrected here |
+| `RE43` | Ocean 2 Plus, 12 kW, single-phase | confirmed on one installation by shuette42/ecoflow-energy-ha: every field read here has the `RE11`'s field number; AC power is reported with the opposite sign and corrected here |
 
 **Nothing here is gated on the prefix.** The setup dialog accepts any serial,
 so a unit that is not listed can simply be tried. If yours works - or does not -
@@ -108,7 +109,7 @@ electronics.
 
 **Phases:** voltage, current and active power per phase — disabled by default to
 keep the device page readable. Enable them in the entity settings if you need
-them.
+them. The grid frequency is shown as its own sensor.
 
 **Energy (for the energy dashboard):** grid consumption, grid return, solar
 production, battery charged/discharged, house consumption — as kWh counters.

@@ -224,6 +224,8 @@ class Po2Telemetry:
     soc_percent: float | None = None
     remaining_wh: float | None = None
     pcs_total_w: float | None = None
+    #: Netzfrequenz aus dem Netz-Phasenblock 4.4 (Phase A).
+    grid_frequency_hz: float | None = None
     # Phasenindex (1-3) -> nur die uebertragenen Felder
     phases: dict[int, dict[str, float]] = field(default_factory=dict)
     # String-Index -> Leistung in W
@@ -382,6 +384,39 @@ def _decode_energy_stream(pdata: bytes) -> EnergyStream | None:
     )
 
 
+def _grid_frequency(blocks: list[Any]) -> float | None:
+    """Netzfrequenz aus dem Netz-Phasenblock 4.4 - Frequenz der Phase A.
+
+    Der Block traegt je Phase einen Datensatz: Spannung in Feld 1, Frequenz in
+    Feld 3, Phasenindex in Feld 5. Ein einphasiges Geraet (``RE42``) fuellt die
+    Frequenz nur bei Phase A und sendet bei B, C und einem Datensatz ohne Index
+    0.0 - wer den letzten Datensatz nimmt, liest 0 Hz. Deshalb zaehlt Phase A,
+    so wie gesendet, 0.0 eingeschlossen: ein Netzausfall zeigt 0 Hz neben 0 V.
+    Nur wenn Phase A keine Frequenz traegt, springt die erste andere Phase mit
+    einem Wert ueber 0 ein. Teil-Datensaetze ohne Feld 3 kommen vor; dann bleibt
+    es bei None und der letzte Wert stehen. Regel nach shuette42/ecoflow-energy-ha.
+    """
+    phase_a: float | None = None
+    fallback: float | None = None
+    for block in blocks:
+        if not isinstance(block, bytes):
+            continue
+        for record_raw in _decode_fields(block).get(1, []):
+            if not isinstance(record_raw, bytes):
+                continue
+            r = _decode_fields(record_raw)
+            freq = r.get(3, [None])[0]
+            index = r.get(5, [None])[0]
+            if not isinstance(freq, float) or not isinstance(index, int):
+                continue
+            if index == 1:
+                if phase_a is None:
+                    phase_a = freq
+            elif 2 <= index <= 3 and fallback is None and freq > 0:
+                fallback = freq
+    return phase_a if phase_a is not None else fallback
+
+
 def is_energy_stream(pdata: bytes) -> bool:
     """True, wenn ein 96/33-Rahmen wirklich ein Energiefluss ist."""
     return _decode_energy_stream(pdata) is not None
@@ -526,6 +561,8 @@ def _decode_po2_telemetry(pdata: bytes) -> Po2Telemetry:
                 index = int(_num(e, 1))
                 if index >= 1 and 4 in e:
                     result.pv_strings[index] = _num(e, 4)
+
+        result.grid_frequency_hz = _grid_frequency(p.get(4, []))
 
 
     # Rueckfallebenen: Was der Flussblock nicht geliefert hat, kommt aus den

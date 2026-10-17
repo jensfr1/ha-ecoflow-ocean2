@@ -54,6 +54,9 @@
       "inverter_power": {
         "name": "Wechselrichter-Ausgang"
       },
+      "grid_frequency": {
+        "name": "Netzfrequenz"
+      },
       "phase_a_voltage": {
         "name": "Spannung Phase A"
       },

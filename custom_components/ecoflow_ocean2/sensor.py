@@ -18,6 +18,7 @@ from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
+    UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
 )
@@ -81,6 +82,15 @@ SENSORS: tuple[EcoflowSensorDescription, ...] = (
         value_fn=lambda s: s.inverter_power_w,
         entity_registry_enabled_default=False,
         **POWER,
+    ),
+    EcoflowSensorDescription(
+        key="grid_frequency",
+        translation_key="grid_frequency",
+        device_class=SensorDeviceClass.FREQUENCY,
+        native_unit_of_measurement=UnitOfFrequency.HERTZ,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda s: s.grid_frequency_hz,
     ),
     EcoflowSensorDescription(
         key="battery_soc",

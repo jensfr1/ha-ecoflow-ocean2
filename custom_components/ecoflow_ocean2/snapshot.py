@@ -80,6 +80,7 @@ class Snapshot:
     battery_remaining_wh: float | None = None
     grid_power_w: float | None = None
     inverter_power_w: float | None = None
+    grid_frequency_hz: float | None = None
     #: Vom Geraet gemeldet, sonst berechnet - siehe compute_house_load()
     house_power_w: float | None = None
     #: True, sobald die Hauslast einmal gemessen kam (dann nie mehr rechnen)
@@ -190,6 +191,19 @@ def average_phases(snapshot: Snapshot, attribute: str) -> float | None:
     return sum(values) / len(values)
 
 
+#: Seriennummern-Praefixe, die Wechselrichterleistung (4.1) und Phasen-
+#: Wirkleistung mit umgekehrtem Vorzeichen melden. Beim ``RE42`` stand -4267 W,
+#: waehrend das Geraet 4570 W ins Haus lieferte; ein ``RE41`` meldete +375 W
+#: bei 455 W Hauslast, wie der ``RE11``. Batterie, Netz, PV, Hauslast und
+#: Scheinleistung haben auf allen dasselbe Vorzeichen. Gemessen von
+#: shuette42/ecoflow-energy-ha an je einer Anlage (``RE42``, ``RE43``).
+AC_SIGN_INVERTED: frozenset[str] = frozenset({"RE42", "RE43"})
+
+
+def _ac_sign(sn: str) -> float:
+    return -1.0 if sn[:4].upper() in AC_SIGN_INVERTED else 1.0
+
+
 def merge_snapshot(
     sn: str, previous: Snapshot | None, message: DecodedMessage, now: float
 ) -> Snapshot:
@@ -264,8 +278,12 @@ def merge_snapshot(
             snapshot.battery_soc = telemetry.soc_percent
         if telemetry.remaining_wh is not None:
             snapshot.battery_remaining_wh = telemetry.remaining_wh
+        ac_sign = _ac_sign(sn)
         if telemetry.pcs_total_w is not None:
-            snapshot.inverter_power_w = telemetry.pcs_total_w
+            # 0.0 + x statt x * -1: ein ruhender Wechselrichter bliebe sonst -0.0
+            snapshot.inverter_power_w = 0.0 + telemetry.pcs_total_w * ac_sign
+        if telemetry.grid_frequency_hz is not None:
+            snapshot.grid_frequency_hz = telemetry.grid_frequency_hz
         # Gemessen schlaegt gerechnet - siehe compute_house_load()
         if telemetry.house_power_w is not None:
             snapshot.house_power_w = max(0.0, telemetry.house_power_w)
@@ -273,6 +291,8 @@ def merge_snapshot(
 
         for index, partial in telemetry.phases.items():
             key = PHASE_KEYS[index - 1]
+            if ac_sign < 0 and "act_pwr" in partial:
+                partial = {**partial, "act_pwr": 0.0 - partial["act_pwr"]}
             snapshot.phases[key] = _merge_phase(snapshot.phases.get(key), partial)
 
         snapshot.pv_strings.update(telemetry.pv_strings)
